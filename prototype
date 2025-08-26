@@ -1,0 +1,1585 @@
+import React, { useState, useEffect, useRef, memo } from 'react';
+import * as idb from 'idb';
+import {
+  User,
+  FormInput,
+  Camera,
+  HeartPulse,
+  Syringe,
+  Home,
+  CloudUpload,
+  History,
+  CheckCircle,
+  AlertCircle,
+  ChevronLeft,
+  Search,
+  Plus,
+  ArrowRight,
+  Download,
+  ShieldCheck,
+  Circle,
+  FileText,
+  UserCircle2,
+  Menu,
+  LogOut,
+  Eye,
+  MapPin,
+  Map,
+} from 'lucide-react';
+
+// Load Chart.js library dynamically for data visualization
+const loadChartJs = () => {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = "https://cdn.jsdelivr.net/npm/chart.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => reject(new Error("Failed to load Chart.js"));
+    document.head.appendChild(script);
+  });
+};
+
+// Language content for internationalization
+const languageContent = {
+  en: {
+    title: 'GROWTH GUARDIAN',
+    description: 'A simple way to track your child\'s growth and well-being. Easily record their height and weight to see their progress over time and make sure they\'re on a healthy path.',
+    loginTitle: 'eSignet Login',
+    loginDescription: 'Please enter your eSignet details to securely access the system.',
+    loginPlaceholderId: 'National ID',
+    loginPlaceholderCaptcha: 'Enter Captcha',
+    loginButton: 'Login',
+    home: 'Home',
+    newChildRecordTitle: 'New Child Record',
+    registerChildButton: 'Register New Child',
+    historyTitle: 'Record History',
+    profileTitle: 'My Profile',
+    childName: 'Child\'s Name',
+    facePhoto: 'Child\'s Face Photo',
+    uploadPhoto: 'Upload Photo',
+    age: 'Age (in years)',
+    dateOfBirth: 'Date of Birth',
+    weight: 'Weight (kg)',
+    height: 'Height (cm)',
+    parentName: 'Parent/Guardian Name',
+    malnutritionSigns: 'Malnutrition Signs (if any)',
+    recentIllnesses: 'Recent Illnesses (if any)',
+    parentalConsent: 'I confirm that I have parental consent to collect this data.',
+    saveRecordButton: 'Save Record',
+    searchPlaceholder: 'Search by name or Health ID...',
+    noRecords: 'No child records found.',
+    downloadButton: 'Download Booklet',
+    logoutButton: 'Log Out',
+    nationalId: 'National ID',
+    role: 'Role',
+    appStatus: 'App Status',
+    logOutMessage: 'Are you sure you want to log out?',
+    viewRecord: 'View Record',
+    growthOverview: 'Growth Overview',
+    malnutritionAndIllnesses: 'Malnutrition & Illnesses',
+    sqlTable: 'SQL Table View',
+    field: 'Field',
+    dataType: 'Data Type',
+    value: 'Value',
+    noRecordSelected: 'No record selected.',
+    weightOverTime: 'Weight Over Time',
+    heightOverTime: 'Height Over Time',
+    healthScoreBreakdown: 'Health Score Breakdown',
+    growthAndNutrition: 'Growth & Nutrition',
+    illnessIncidence: 'Illness Incidence',
+    socialWellbeing: 'Social Wellbeing',
+    tagLocation: 'Tag Current Location',
+    locationTagged: 'Location Tagged',
+    location: 'Location',
+    noLocationSupport: 'Geolocation not supported.',
+    locationPermissionDenied: 'Permission denied. Please enable location permissions for your browser/site in your device settings.',
+    locationUnavailable: 'Location unavailable. Try again.',
+    locationTimeout: 'Location request timed out.',
+    unknownLocationError: 'Unknown location error occurred.',
+    tryingFallback: 'Trying fallback location via IP...',
+    fallbackLocationTagged: 'Fallback Location Tagged',
+  },
+  hi: {
+    title: 'पोषणजाली',
+    description: 'क्षेत्रीय कार्यकर्ताओं के लिए बच्चे के विकास को दर्ज करने और ट्रैक करने के लिए एक स्वास्थ्य रिकॉर्ड प्रणाली।',
+    loginTitle: 'ई-सिग्नेट लॉगिन',
+    loginDescription: 'कृपया सिस्टम तक सुरक्षित रूप से पहुंचने के लिए अपना ई-सिग्नेट विवरण दर्ज करें।',
+    loginPlaceholderId: 'राष्ट्रीय पहचान पत्र',
+    loginPlaceholderCaptcha: 'कैप्चा दर्ज करें',
+    loginButton: 'लॉगिन करें',
+    home: 'होम',
+    newChildRecordTitle: 'नया बाल रिकॉर्ड',
+    registerChildButton: 'नए बच्चे का पंजीकरण करें',
+    historyTitle: 'रिकॉर्ड इतिहास',
+    profileTitle: 'मेरी प्रोफाइल',
+    childName: 'बच्चे का नाम',
+    facePhoto: 'बच्चे की चेहरे की फोटो',
+    uploadPhoto: 'फोटो अपलोड करें',
+    age: 'उम्र (साल में)',
+    dateOfBirth: 'जन्म की तारीख',
+    weight: 'वजन (किग्रा)',
+    height: 'ऊंचाई (सेमी)',
+    parentName: 'माता-पिता/अभिभावक का नाम',
+    malnutritionSigns: 'कुपोषण के लक्षण (यदि कोई हो)',
+    recentIllnesses: 'हाल की बीमारियाँ (यदि कोई हो)',
+    parentalConsent: 'मैं पुष्टि करता हूँ कि मेरे पास यह डेटा एकत्र करने के लिए माता-पिता की सहमति है।',
+    saveRecordButton: 'रिकॉर्ड सहेजें',
+    searchPlaceholder: 'नाम या स्वास्थ्य आईडी से खोजें...',
+    noRecords: 'कोई बाल रिकॉर्ड नहीं मिला।',
+    downloadButton: 'पुस्तिका डाउनलोड करें',
+    logoutButton: 'लॉग आउट',
+    nationalId: 'राष्ट्रीय पहचान पत्र',
+    role: 'भूमिका',
+    appStatus: 'ऐप स्थिति',
+    logOutMessage: 'क्या आप वाकई लॉग आउट करना चाहते हैं?',
+    viewRecord: 'रिकॉर्ड देखें',
+    growthOverview: 'विकास अवलोकन',
+    malnutritionAndIllnesses: 'कुपोषण और बीमारियाँ',
+    sqlTable: 'एसक्यूएल टेबल व्यू',
+    field: 'फील्ड',
+    dataType: 'डेटा प्रकार',
+    value: 'मूल्य',
+    noRecordSelected: 'कोई रिकॉर्ड नहीं चुना गया।',
+    weightOverTime: 'समय के साथ वजन',
+    heightOverTime: 'समय के साथ ऊंचाई',
+    healthScoreBreakdown: 'स्वास्थ्य स्कोर ब्रेकडाउन',
+    growthAndNutrition: 'विकास और पोषण',
+    illnessIncidence: 'बीमारी की घटना',
+    socialWellbeing: 'सामाजिक कल्याण',
+    tagLocation: 'वर्तमान स्थान टैग करें',
+    locationTagged: 'स्थान टैग किया गया',
+    location: 'स्थान',
+    noLocationSupport: 'भू-स्थान समर्थित नहीं है।',
+    locationPermissionDenied: 'अनुमति अस्वीकृत। कृपया अपने डिवाइस की सेटिंग में अपने ब्राउज़र/साइट के लिए स्थान अनुमतियाँ सक्षम करें।',
+    locationUnavailable: 'स्थान अनुपलब्ध है। फिर से प्रयास करें।',
+    locationTimeout: 'स्थान अनुरोध का समय समाप्त हो गया।',
+    unknownLocationError: 'अज्ञात स्थान त्रुटि हुई।',
+    tryingFallback: 'आईपी ​​के माध्यम से फ़ॉलबैक स्थान का प्रयास कर रहा है...',
+    fallbackLocationTagged: 'फ़ॉलबैक स्थान टैग किया गया',
+  },
+};
+
+// Main application component
+const App = () => {
+  // --- STATE MANAGEMENT ---
+  const [currentPage, setCurrentPage] = useState('login');
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
+  const [records, setRecords] = useState([]);
+  const [userProfile, setUserProfile] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [language, setLanguage] = useState('en');
+  // State for form data
+  const [newChildForm, setNewChildForm] = useState({
+    name: '',
+    facePhoto: null,
+    age: '',
+    dateOfBirth: '',
+    weight: '',
+    height: '',
+    parentName: '',
+    malnutritionSigns: '',
+    recentIllnesses: '',
+    parentalConsent: false,
+  });
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // State for authentication loading screen
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  // New state for the dynamically generated captcha code
+  const [captchaCode, setCaptchaCode] = useState('');
+  // New state to track if the jsPDF library is loaded
+  const [isJSPDFLoaded, setIsJSPDFLoaded] = useState(false);
+  // State for logout confirmation modal
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  // New state to store the record selected for detailed view
+  const [selectedRecord, setSelectedRecord] = useState(null);
+
+  // --- DATABASE & AUTH REFS ---
+  const db = useRef(null);
+  const mockAuth = useRef({
+    isLoggedIn: false,
+    profile: null,
+  });
+
+  // Function to generate a new, random captcha code
+  const generateCaptcha = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 5; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
+
+  // --- LIFECYCLE EFFECTS ---
+
+  // Initialize IndexedDB, load jsPDF, and event listeners on component mount
+  useEffect(() => {
+    // --- IndexedDB Initialization ---
+    const initDb = async () => {
+      db.current = await idb.openDB('child-health-db', 1, {
+        upgrade(db) {
+          db.createObjectStore('child-records', { keyPath: 'healthId' });
+        },
+      });
+      console.log('IndexedDB initialized.');
+      fetchRecords(); // Load any existing records
+    };
+
+    // --- Dynamic Script Loading for jsPDF ---
+    const loadPdfScript = () => {
+        const script = document.createElement('script');
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+        script.onload = () => {
+            setIsJSPDFLoaded(true);
+            console.log("jsPDF library loaded successfully.");
+        };
+        script.onerror = () => {
+            console.error("Failed to load jsPDF script.");
+        };
+        document.head.appendChild(script);
+    };
+
+    // --- Online/Offline Status Detection ---
+    const handleOnline = () => {
+      setIsOnline(true);
+      console.log('Connection restored.');
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      console.log('Connection lost.');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    handleOnline(); // Initial check for online status
+
+    // --- User Profile Check ---
+    const storedUser = JSON.parse(localStorage.getItem('userProfile'));
+    if (storedUser) {
+      setUserProfile(storedUser);
+      mockAuth.current.isLoggedIn = true;
+      mockAuth.current.profile = storedUser;
+      setCurrentPage('home');
+    }
+
+    // Initialize the database and load the scripts
+    initDb();
+    loadPdfScript();
+
+    // Cleanup event listeners
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Effect to generate a new captcha code every time the user navigates to the login page
+  useEffect(() => {
+    if (currentPage === 'login') {
+      setCaptchaCode(generateCaptcha());
+    }
+  }, [currentPage]);
+
+  // --- DATA HANDLING FUNCTIONS ---
+
+  // Fetches all records from IndexedDB
+  const fetchRecords = async () => {
+    if (!db.current) return;
+    const allRecords = await db.current.getAll('child-records');
+    setRecords(allRecords);
+  };
+
+  // Handles form input changes
+  const handleFormChange = (e) => {
+    const { name, value, type, checked, files } = e.target;
+    setNewChildForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : files ? files[0] : value,
+    }));
+  };
+
+  // Handles form submission for new child data
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    if (!newChildForm.parentalConsent) {
+      setSyncMessage(languageContent[language].parentalConsent);
+      return;
+    }
+
+    // Generate a unique Health ID
+    const healthId = `HLTH-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+
+    // Handle photo data from upload
+    let photoData = null;
+    if (newChildForm.facePhoto) {
+      photoData = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(newChildForm.facePhoto);
+      });
+    }
+
+    const newRecord = {
+      ...newChildForm,
+      healthId,
+      facePhoto: photoData,
+      status: 'Pending Upload',
+      timestamp: new Date().toISOString(),
+      representativeId: userProfile?.nationalId,
+    };
+
+    // Save to IndexedDB
+    try {
+      await db.current.add('child-records', newRecord);
+      setSyncMessage(`Record for ${newChildForm.name} saved locally. Health ID: ${healthId}.`);
+      setNewChildForm({
+        name: '',
+        facePhoto: null,
+        age: '',
+        dateOfBirth: '',
+        weight: '',
+        height: '',
+        parentName: '',
+        malnutritionSigns: '',
+        recentIllnesses: '',
+        parentalConsent: false,
+      });
+      fetchRecords(); // Refresh the list
+      // Reset file input for a cleaner UI
+      const fileInput = document.getElementById('file-input');
+      if (fileInput) fileInput.value = '';
+      handlePageChange('history');
+    } catch (error) {
+      console.error('Error saving to IndexedDB:', error);
+      setSyncMessage('Error saving record. Please try again.');
+    }
+  };
+
+  // --- AUTHENTICATION & SYNC LOGIC ---
+
+  // Mock eSignet authentication
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    const nationalId = e.target.nationalId.value;
+    const captchaInput = e.target.captcha.value;
+
+    setIsAuthenticating(true);
+    setCurrentPage('loading');
+    setSyncMessage('Authenticating with eSignet...');
+
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    if (captchaInput.toUpperCase() === captchaCode) {
+      const mockUser = {
+        nationalId: nationalId,
+        name: 'Field Representative',
+        role: 'Health Worker',
+      };
+      setUserProfile(mockUser);
+      mockAuth.current.isLoggedIn = true;
+      mockAuth.current.profile = mockUser;
+      localStorage.setItem('userProfile', JSON.stringify(mockUser));
+      setIsAuthenticating(false);
+    } else {
+      setSyncMessage('Authentication failed. Please check your ID and captcha.');
+      setIsAuthenticating(false);
+      setCurrentPage('login');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('userProfile');
+    setUserProfile(null);
+    mockAuth.current.isLoggedIn = false;
+    mockAuth.current.profile = null;
+    setCurrentPage('login');
+    setShowLogoutModal(false);
+  };
+
+  // Handles data upload to a simulated backend
+  const handleDataUpload = async () => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    setSyncMessage('Uploading records...');
+
+    const pendingRecords = records.filter(rec => rec.status === 'Pending Upload');
+    if (pendingRecords.length === 0) {
+      setSyncMessage('No new records to upload.');
+      setIsSyncing(false);
+      return;
+    }
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      const tx = db.current.transaction('child-records', 'readwrite');
+      for (const record of pendingRecords) {
+        await tx.store.put({ ...record, status: 'Uploaded' });
+      }
+      await tx.done;
+
+      setSyncMessage(`Successfully uploaded ${pendingRecords.length} record(s).`);
+      fetchRecords();
+    } catch (error) {
+      console.error('Upload failed:', error);
+      setSyncMessage('Upload failed. Please try again.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+
+  // --- PDF GENERATION ---
+  const generatePdf = (record) => {
+    // Check if the jsPDF library is available.
+    if (!isJSPDFLoaded) {
+      setSyncMessage('PDF library is still loading. Please wait a moment and try again.');
+      console.error('jsPDF not found. Script may not have finished loading.');
+      return;
+    }
+
+    // Now we can safely access the jsPDF object
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.setFontSize(22);
+    doc.text('Child Health Record Booklet', 10, 20);
+
+    doc.setFontSize(14);
+    doc.text(`Health ID: ${record.healthId}`, 10, 30);
+    doc.text(`Name: ${record.name}`, 10, 40);
+    doc.text(`Age: ${record.age}`, 10, 50);
+    doc.text(`Date of Birth: ${record.dateOfBirth}`, 10, 60);
+    doc.text(`Weight: ${record.weight} kg`, 10, 70);
+    doc.text(`Height: ${record.height} cm`, 10, 80);
+    doc.text(`Parent/Guardian: ${record.parentName}`, 10, 90);
+    doc.text(`Malnutrition Signs: ${record.malnutritionSigns || 'N/A'}`, 10, 100);
+    doc.text(`Recent Illnesses: ${record.recentIllnesses || 'N/A'}`, 10, 110);
+    if (record.location && record.location.latitude && record.location.longitude) {
+      doc.text(`Location: Lat ${record.location.latitude.toFixed(4)}, Long ${record.location.longitude.toFixed(4)}`, 10, 120);
+    } else if (record.location && record.location.city && record.location.country) {
+      doc.text(`Location: ${record.location.city}, ${record.location.country}`, 10, 120);
+    }
+
+
+    // Add image if available
+    if (record.facePhoto) {
+      doc.addImage(record.facePhoto, 'JPEG', 150, 20, 40, 40);
+    }
+
+    doc.save(`child-health-record-${record.healthId}.pdf`);
+  };
+
+  // Filter records based on search term
+  const filteredRecords = records.filter(record =>
+    record.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    record.healthId.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Function to handle page change with fade-in
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    setIsSidebarOpen(false);
+  };
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
+  // Function to handle viewing a specific record
+  const handleViewRecord = (record) => {
+    setSelectedRecord(record);
+    handlePageChange('view-record');
+  };
+
+  // --- UI RENDERING ---
+
+  // Plant sapling icon SVG component
+  const PlantSaplingIcon = ({ className }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 21c-1.1 0-2-.9-2-2v-4a2 2 0 012-2c1.1 0 2 .9 2 2v4c0 1.1-.9 2-2 2zM9 13c-.55 0-1-.45-1-1V5c0-.55.45-1 1-1h1c.55 0 1 .45 1 1v7c0 .55-.45 1-1 1H9zM14 13c-.55 0-1-.45-1-1V5c0-.55.45-1 1-1h1c.55 0 1 .45 1 1v7c0 .55-.45 1-1 1h-1z"/>
+    </svg>
+  );
+
+  // Common Layout for all pages
+  const PageLayout = ({ children, title, onBack, gradientBg = false }) => (
+    <div className={`min-h-screen relative font-sans text-gray-800 flex flex-col items-center justify-center ${gradientBg ? '' : 'text-white'}`}>
+      <div className={`${gradientBg ? '' : 'bg-transparent'} rounded-xl p-6 w-full max-w-2xl`}>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex space-x-2">
+            {onBack && (
+              <button onClick={onBack} className="p-2 rounded-full hover:bg-white/20 transition-colors hover:scale-110 transition-transform duration-300">
+                <ChevronLeft size={24} />
+              </button>
+            )}
+          </div>
+          <h2 className={`text-2xl font-bold text-center flex items-center justify-center space-x-2 ${gradientBg ? 'text-gray-800' : 'text-white'}`}>
+            <span>{title}</span>
+          </h2>
+          <div className="w-16"></div> {/* Spacer for alignment */}
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+
+  // New Loading Page Component
+  const LoadingPage = ({ onAuthComplete }) => {
+    useEffect(() => {
+      if (!isAuthenticating) {
+        setTimeout(() => {
+          onAuthComplete();
+        }, 1000);
+      }
+    }, [isAuthenticating, onAuthComplete]);
+
+    return (
+      <div className="min-h-screen relative font-sans text-gray-800 flex flex-col items-center justify-center">
+        <div className="absolute inset-0 bg-black opacity-30 -z-10"></div>
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <style jsx>
+            {`
+              @keyframes zoomIn {
+                0% { transform: scale(1); opacity: 0; }
+                100% { transform: scale(2.5); opacity: 1; }
+              }
+              .animate-zoomIn {
+                animation: zoomIn 1s ease-in-out forwards;
+              }
+            `}
+          </style>
+          <PlantSaplingIcon className="h-24 w-24 text-white animate-zoomIn" />
+          <p className="text-white text-xl font-semibold opacity-0 animate-fadeIn" style={{ animationDelay: '1s' }}>
+            {syncMessage}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  // --- Page Components ---
+
+  const LoginPage = () => (
+    <div className="min-h-screen relative font-sans text-gray-800 flex flex-col items-center justify-center">
+      <div className={`bg-white/30 rounded-xl shadow-lg backdrop-blur-sm p-8 max-w-sm w-full transition-all duration-300 hover:scale-[1.02] hover:bg-white/40 hover:shadow-2xl`}>
+        <h1 className="text-3xl font-bold text-gray-800 text-center mb-6 flex items-center justify-center space-x-2">
+          <ShieldCheck size={32} className="text-gray-800" />
+          <span>{languageContent[language].loginTitle}</span>
+        </h1>
+        <p className="text-center text-gray-700 mb-6">
+          {languageContent[language].loginDescription}
+        </p>
+        {syncMessage && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">
+            <span className="block sm:inline">{syncMessage}</span>
+          </div>
+        )}
+        <form onSubmit={handleAuthSubmit} className="space-y-4">
+          <div className="relative">
+            <input
+              type="text"
+              name="nationalId"
+              placeholder={languageContent[language].loginPlaceholderId}
+              className="w-full p-3 pl-10 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 transition-all text-gray-800"
+              required
+            />
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                name="captcha"
+                placeholder={languageContent[language].loginPlaceholderCaptcha}
+                className="w-full p-3 pl-10 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 transition-all text-gray-800"
+              />
+              <FormInput className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            </div>
+            <div className="bg-gray-200 text-gray-800 text-2xl font-bold p-3 rounded-lg w-28 text-center select-none tracking-widest border border-gray-300">
+              {captchaCode}
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSyncing}
+            className="w-full p-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-indigo-300 hover:scale-[1.02] transition-transform duration-300"
+          >
+            {isSyncing ? 'Authenticating...' : languageContent[language].loginButton}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+
+  const HomePage = () => (
+    <div className="min-h-screen relative font-sans text-gray-800 flex flex-col items-center pt-24 sm:pt-40">
+      <div className={`bg-transparent rounded-xl p-6 w-full max-w-2xl`}>
+        <div className="flex flex-col items-center space-y-6">
+          <div className="flex items-center space-x-4 mb-8">
+            <PlantSaplingIcon className="h-10 w-10 text-white" />
+            <h1 className="text-5xl font-extrabold text-white font-[Poppins]">{languageContent[language].title}</h1>
+          </div>
+          <p className="text-center text-white text-md font-semibold max-w-sm">
+            {languageContent[language].description}
+          </p>
+          <button
+            onClick={() => handlePageChange('add-child')}
+            className="w-full max-w-sm p-4 bg-blue-600/70 text-white font-bold rounded-xl shadow-md hover:bg-blue-700/70 hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 backdrop-blur-sm mx-auto hover:scale-105 transition-transform duration-300"
+          >
+            <Plus size={24} />
+            <span>{languageContent[language].registerChildButton}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Memoized form component to prevent unnecessary re-renders
+  const MemoizedAddChildForm = memo(() => {
+    // We now use an internal state for the form within this memoized component
+    const [formData, setFormData] = useState({ ...newChildForm });
+    const nameInputRef = useRef(null);
+    const [locationData, setLocationData] = useState(null);
+    const [loadingLocation, setLoadingLocation] = useState(false);
+    const [locationError, setLocationError] = useState(null);
+
+    // This effect ensures the first input field is always focused when the form loads.
+    useEffect(() => {
+      nameInputRef.current?.focus();
+    }, []);
+
+    // Handles form input changes
+    const handleChange = (e) => {
+      const { name, value, type, checked, files } = e.target;
+      setFormData((prev) => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : files ? files[0] : value,
+      }));
+    };
+
+    // Geolocation function with a fallback
+    const getGeolocation = () => {
+      setLoadingLocation(true);
+      setLocationError(null);
+      setLocationData(null);
+
+      // Try precise geolocation first
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setLocationData({
+              type: 'precise',
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            });
+            setLoadingLocation(false);
+          },
+          (error) => {
+            console.error('Geolocation failed:', error);
+            let errorMessage = languageContent[language].unknownLocationError;
+            switch(error.code) {
+              case error.PERMISSION_DENIED:
+                errorMessage = languageContent[language].locationPermissionDenied;
+                break;
+              case error.POSITION_UNAVAILABLE:
+                errorMessage = languageContent[language].locationUnavailable;
+                break;
+              case error.TIMEOUT:
+                errorMessage = languageContent[language].locationTimeout;
+                break;
+            }
+            setLocationError(errorMessage);
+            // Fallback to IP-based location
+            getFallbackLocation();
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      } else {
+        setLocationError(languageContent[language].noLocationSupport);
+        getFallbackLocation();
+      }
+    };
+
+    // Fallback to IP-based location
+    const getFallbackLocation = async () => {
+      setLoadingLocation(true);
+      setLocationError(languageContent[language].tryingFallback);
+      try {
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        if (data && data.latitude && data.longitude) {
+           setLocationData({
+              type: 'fallback',
+              latitude: data.latitude,
+              longitude: data.longitude,
+              city: data.city,
+              country: data.country_name,
+           });
+           setLoadingLocation(false);
+           setLocationError(null);
+           console.log("Fallback location successfully tagged.")
+        } else {
+           setLocationError('Fallback location failed.');
+           setLoadingLocation(false);
+        }
+      } catch (e) {
+        setLocationError('Fallback location network error.');
+        setLoadingLocation(false);
+      }
+    };
+
+
+    // The form submission logic now uses the internal formData state
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.parentalConsent) {
+          setSyncMessage(languageContent[language].parentalConsent);
+          return;
+        }
+
+        // Generate a unique Health ID
+        const healthId = `HLTH-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+
+        // Handle photo data from upload
+        let photoData = null;
+        if (formData.facePhoto) {
+          photoData = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(formData.facePhoto);
+          });
+        }
+
+        const newRecord = {
+          ...formData,
+          healthId,
+          facePhoto: photoData,
+          status: 'Pending Upload',
+          timestamp: new Date().toISOString(),
+          representativeId: userProfile?.nationalId,
+          // Add the location data
+          location: locationData,
+        };
+
+        // Save to IndexedDB
+        try {
+          await db.current.add('child-records', newRecord);
+          setSyncMessage(`Record for ${formData.name} saved locally. Health ID: ${healthId}.`);
+          setNewChildForm({
+            name: '',
+            facePhoto: null,
+            age: '',
+            dateOfBirth: '',
+            weight: '',
+            height: '',
+            parentName: '',
+            malnutritionSigns: '',
+            recentIllnesses: '',
+            parentalConsent: false,
+          });
+          setFormData({
+            name: '',
+            facePhoto: null,
+            age: '',
+            dateOfBirth: '',
+            weight: '',
+            height: '',
+            parentName: '',
+            malnutritionSigns: '',
+            recentIllnesses: '',
+            parentalConsent: false,
+          });
+          setLocationData(null);
+          fetchRecords(); // Refresh the list
+          // Reset file input for a cleaner UI
+          const fileInput = document.getElementById('file-input');
+          if (fileInput) fileInput.value = '';
+          handlePageChange('history');
+        } catch (error) {
+          console.error('Error saving to IndexedDB:', error);
+          setSyncMessage('Error saving record. Please try again.');
+        }
+    };
+
+    return (
+      <div className={`p-6 bg-white/30 rounded-xl shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:bg-white/40 hover:shadow-2xl`}>
+        {syncMessage && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg relative mb-4" role="alert">
+            <span className="block sm:inline">{syncMessage}</span>
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">{languageContent[language].childName}</label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full p-3 rounded-lg border border-gray-300 text-gray-800"
+              ref={nameInputRef}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">{languageContent[language].facePhoto}</label>
+            <div className="flex items-center space-x-4 mb-4">
+              <input
+                type="file"
+                name="facePhoto"
+                id="file-input"
+                accept="image/*"
+                onChange={handleChange}
+                className="hidden"
+              />
+              <label
+                htmlFor="file-input"
+                className="p-3 bg-indigo-500 text-white rounded-lg cursor-pointer hover:bg-indigo-600 transition-colors flex items-center space-x-2"
+              >
+                <CloudUpload size={20} />
+                <span>{languageContent[language].uploadPhoto}</span>
+              </label>
+            </div>
+
+            {/* Photo preview */}
+            {formData.facePhoto && (
+              <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-indigo-500 mx-auto mt-4">
+                <img src={URL.createObjectURL(formData.facePhoto)} alt="Child's face" className="w-full h-full object-cover" />
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">{languageContent[language].age}</label>
+              <input
+                type="number"
+                step="0.1"
+                name="age"
+                value={formData.age}
+                onChange={handleChange}
+                className="w-full p-3 rounded-lg border border-gray-300 text-gray-800"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">{languageContent[language].dateOfBirth}</label>
+              <input
+                type="date"
+                name="dateOfBirth"
+                value={formData.dateOfBirth}
+                onChange={handleChange}
+                className="w-full p-3 rounded-lg border border-gray-300 text-gray-800"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">{languageContent[language].weight}</label>
+              <input
+                type="number"
+                step="0.1"
+                name="weight"
+                value={formData.weight}
+                onChange={handleChange}
+                className="w-full p-3 rounded-lg border border-gray-300 text-gray-800"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">{languageContent[language].height}</label>
+              <input
+                type="number"
+                step="0.1"
+                name="height"
+                value={formData.height}
+                onChange={handleChange}
+                className="w-full p-3 rounded-lg border border-gray-300 text-gray-800"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">{languageContent[language].parentName}</label>
+            <input
+              type="text"
+              name="parentName"
+              value={formData.parentName}
+              onChange={handleChange}
+              className="w-full p-3 rounded-lg border border-gray-300 text-gray-800"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">{languageContent[language].malnutritionSigns}</label>
+            <textarea
+              name="malnutritionSigns"
+              value={formData.malnutritionSigns}
+              onChange={handleChange}
+              className="w-full p-3 rounded-lg border border-gray-300 text-gray-800"
+              placeholder="e.g., Hair discoloration, edema, etc. (or 'N/A')"
+            ></textarea>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">{languageContent[language].recentIllnesses}</label>
+            <textarea
+              name="recentIllnesses"
+              value={formData.recentIllnesses}
+              onChange={handleChange}
+              className="w-full p-3 rounded-lg border border-gray-300 text-gray-800"
+              placeholder="e.g., Fever, cough, diarrhea, etc. (or 'N/A')"
+            ></textarea>
+          </div>
+
+          {/* Geo-tagging section with fallback */}
+          <div>
+            <button
+              type="button"
+              onClick={getGeolocation}
+              disabled={loadingLocation}
+              className="w-full p-3 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2 disabled:bg-blue-300 disabled:cursor-not-allowed"
+            >
+              {loadingLocation ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Loading...</span>
+                </>
+              ) : (
+                <>
+                  <MapPin size={20} />
+                  <span>
+                    {locationData ?
+                      (locationData.type === 'precise' ? languageContent[language].locationTagged : languageContent[language].fallbackLocationTagged) :
+                      languageContent[language].tagLocation}
+                  </span>
+                </>
+              )}
+            </button>
+            {locationData && (
+              <div className="mt-2 text-center text-sm text-gray-600">
+                <p>
+                  {locationData.type === 'precise'
+                    ? `Lat: ${locationData.latitude.toFixed(4)}, Long: ${locationData.longitude.toFixed(4)}`
+                    : `City: ${locationData.city}, Country: ${locationData.country}`}
+                </p>
+              </div>
+            )}
+            {locationError && (
+              <div className="mt-2 text-center text-sm text-red-500 flex items-center justify-center space-x-1">
+                <Map size={16} />
+                <span>{locationError}</span>
+              </div>
+            )}
+          </div>
+          {/* End of geo-tagging section */}
+
+
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              name="parentalConsent"
+              checked={formData.parentalConsent}
+              onChange={handleChange}
+              className="h-5 w-5 rounded text-indigo-600 focus:ring-indigo-500"
+              required
+            />
+            <label className="text-sm font-medium">{languageContent[language].parentalConsent}</label>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full p-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors"
+          >
+            {languageContent[language].saveRecordButton}
+          </button>
+        </form>
+      </div>
+    );
+  });
+
+  const AddChildPage = () => {
+    return (
+      <PageLayout title={languageContent[language].newChildRecordTitle} onBack={() => handlePageChange('home')}>
+        <MemoizedAddChildForm />
+      </PageLayout>
+    );
+  };
+
+  const HistoryPage = () => (
+    <PageLayout title={languageContent[language].historyTitle} onBack={() => handlePageChange('home')}>
+      <div className={`p-6 bg-white/30 rounded-xl shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:bg-white/40 hover:shadow-2xl`}>
+        {syncMessage && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">
+            <span className="block sm:inline">{syncMessage}</span>
+          </div>
+        )}
+        <div className="relative mb-4">
+          <input
+            type="text"
+            placeholder={languageContent[language].searchPlaceholder}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-3 pl-10 rounded-lg border border-gray-300 text-gray-800"
+          />
+          <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        </div>
+
+        <div className="space-y-4">
+          {filteredRecords.length > 0 ? (
+            filteredRecords.map((record, index) => (
+              <div
+                key={record.healthId}
+                className={`bg-gray-50/70 p-4 rounded-lg shadow-sm border border-gray-200 backdrop-blur-sm transition-all duration-300`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">{record.name}</h3>
+                    <p className="text-sm text-gray-500">D.O.B: {record.dateOfBirth}</p>
+                    <p className="text-sm text-gray-500">Health ID: <span className="font-mono text-xs">{record.healthId}</span></p>
+                    {record.location && (
+                      <div className="mt-1 flex items-center text-sm text-gray-600">
+                        <MapPin size={16} className="mr-1 text-indigo-500"/>
+                        {record.location.type === 'precise' ? (
+                          <span>Lat: {record.location.latitude.toFixed(4)}, Long: {record.location.longitude.toFixed(4)}</span>
+                        ) : (
+                          <span>{record.location.city}, {record.location.country} (IP-based)</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className={`flex items-center justify-end text-sm font-medium ${record.status === 'Uploaded' ? 'text-green-600' : 'text-orange-500'}`}>
+                      <Circle size={10} className="mr-1" fill={record.status === 'Uploaded' ? '#16A34A' : '#F97316'} />
+                      {record.status}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Saved: {new Date(record.timestamp).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 flex space-x-2 justify-end">
+                  <button
+                    onClick={() => handleViewRecord(record)}
+                    className="px-4 py-2 text-white text-sm rounded-lg transition-colors flex items-center space-x-1 hover:scale-105 transition-transform duration-300 bg-blue-500 hover:bg-blue-600"
+                  >
+                    <Eye size={16} />
+                    <span>{languageContent[language].viewRecord}</span>
+                  </button>
+                  <button
+                    onClick={() => generatePdf(record)}
+                    disabled={!isJSPDFLoaded} // Disable button if library isn't loaded
+                    className={`px-4 py-2 text-white text-sm rounded-lg transition-colors flex items-center space-x-1 hover:scale-105 transition-transform duration-300
+                      ${isJSPDFLoaded ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-gray-400 cursor-not-allowed'}
+                    `}
+                  >
+                    <Download size={16} />
+                    <span>{isJSPDFLoaded ? languageContent[language].downloadButton : 'Loading...'}</span>
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-center text-gray-500">{languageContent[language].noRecords}</p>
+          )}
+        </div>
+      </div>
+    </PageLayout>
+  );
+
+  const ProfilePage = () => (
+    <PageLayout title={languageContent[language].profileTitle} onBack={() => handlePageChange('home')} gradientBg={true}>
+      <div className={`p-6 bg-white rounded-xl shadow-lg border border-gray-200 transition-all duration-300`}>
+        {userProfile ? (
+          <div className="space-y-4 text-center">
+            <UserCircle2 size={80} className="mx-auto text-indigo-600" />
+            <h2 className="text-2xl font-bold">{userProfile.name}</h2>
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-left">
+              <div className="flex items-center mb-2">
+                <span className="text-sm font-medium text-gray-500 w-32">{languageContent[language].nationalId}:</span>
+                <span className="flex-1 font-semibold">{userProfile.nationalId}</span>
+              </div>
+              <div className="flex items-center mb-2">
+                <span className="text-sm font-medium text-gray-500 w-32">{languageContent[language].role}:</span>
+                <span className="flex-1 font-semibold">{userProfile.role}</span>
+              </div>
+              <div className="flex items-center">
+                <span className="text-sm font-medium text-gray-500 w-32">{languageContent[language].appStatus}:</span>
+                <span className={`flex-1 font-semibold ${isOnline ? 'text-green-600' : 'text-red-600'}`}>
+                  {isOnline ? 'Online' : 'Offline'}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowLogoutModal(true)}
+              className="w-full p-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
+            >
+              <LogOut size={20} />
+              <span>{languageContent[language].logoutButton}</span>
+            </button>
+          </div>
+        ) : (
+          <p className="text-center text-gray-500">Please log in to view your profile.</p>
+        )}
+      </div>
+    </PageLayout>
+  );
+
+  // New component to view a single record with charts and a table
+  const RecordViewPage = () => {
+    // Refs for the chart canvases
+    const pieChartRef = useRef(null);
+    const lineChartRef = useRef(null);
+    const pieChartInstance = useRef(null);
+    const lineChartInstance = useRef(null);
+    const [isChartsLoaded, setIsChartsLoaded] = useState(false);
+
+    useEffect(() => {
+      // Load Chart.js and render the charts on mount
+      const initCharts = async () => {
+        try {
+          // This ensures Chart.js is loaded before trying to use it
+          await loadChartJs();
+          setIsChartsLoaded(true);
+
+          // Prepare data for the pie chart
+          const pieData = {
+            labels: [
+              languageContent[language].growthAndNutrition,
+              languageContent[language].illnessIncidence,
+              languageContent[language].socialWellbeing
+            ],
+            datasets: [{
+              label: languageContent[language].healthScoreBreakdown,
+              data: [85, 10, 5],
+              backgroundColor: ['#4ade80', '#f87171', '#3b82f6'],
+              hoverOffset: 4
+            }]
+          };
+
+          // Destroy previous chart instances if they exist
+          if (pieChartInstance.current) {
+            pieChartInstance.current.destroy();
+          }
+          if (lineChartInstance.current) {
+            lineChartInstance.current.destroy();
+          }
+
+          // Render the pie chart
+          if (pieChartRef.current) {
+            pieChartInstance.current = new window.Chart(pieChartRef.current, {
+              type: 'pie',
+              data: pieData,
+              options: {
+                responsive: true,
+                plugins: {
+                  legend: {
+                    position: 'top',
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        let label = context.label || '';
+                        if (label) {
+                          label += ': ';
+                        }
+                        if (context.raw !== null) {
+                          label += context.raw + '%';
+                        }
+                        return label;
+                      }
+                    }
+                  }
+                },
+              },
+            });
+          }
+
+          // Prepare data for the line chart (mock data for now)
+          const lineData = {
+            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            datasets: [
+              {
+                label: languageContent[language].weightOverTime,
+                data: [10.2, 10.5, 10.7, 10.8],
+                borderColor: '#4f46e5',
+                backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                tension: 0.4,
+                pointStyle: 'circle',
+                pointRadius: 5,
+                pointHoverRadius: 7,
+              },
+              {
+                label: languageContent[language].heightOverTime,
+                data: [75, 76, 76.5, 77],
+                borderColor: '#22c55e',
+                backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                tension: 0.4,
+                pointStyle: 'circle',
+                pointRadius: 5,
+                pointHoverRadius: 7,
+              }
+            ]
+          };
+
+          // Render the line chart
+          if (lineChartRef.current) {
+            lineChartInstance.current = new window.Chart(lineChartRef.current, {
+              type: 'line',
+              data: lineData,
+              options: {
+                responsive: true,
+                plugins: {
+                  legend: {
+                    position: 'top',
+                  },
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                  },
+                },
+              },
+            });
+          }
+
+        } catch (error) {
+          console.error("Error initializing charts:", error);
+        }
+      };
+
+      initCharts();
+
+      // Cleanup function to destroy chart instances on unmount
+      return () => {
+        if (pieChartInstance.current) {
+          pieChartInstance.current.destroy();
+        }
+        if (lineChartInstance.current) {
+          lineChartInstance.current.destroy();
+        }
+      };
+    }, [selectedRecord, language]); // Re-render charts when record or language changes
+
+    if (!selectedRecord) {
+      return (
+        <PageLayout title={languageContent[language].viewRecord} onBack={() => handlePageChange('history')}>
+          <div className="text-center text-gray-500">
+            {languageContent[language].noRecordSelected}
+          </div>
+        </PageLayout>
+      );
+    }
+
+    // Function to create data for the SQL-like table
+    const getTableData = (record) => {
+      const data = [
+        { field: 'Health ID', dataType: 'String', value: record.healthId },
+        { field: languageContent[language].childName, dataType: 'String', value: record.name },
+        { field: languageContent[language].age, dataType: 'Number', value: record.age },
+        { field: languageContent[language].dateOfBirth, dataType: 'Date', value: record.dateOfBirth },
+        { field: languageContent[language].weight, dataType: 'Number', value: record.weight },
+        { field: languageContent[language].height, dataType: 'Number', value: record.height },
+        { field: languageContent[language].parentName, dataType: 'String', value: record.parentName },
+        { field: languageContent[language].malnutritionSigns, dataType: 'String', value: record.malnutritionSigns || 'N/A' },
+        { field: languageContent[language].recentIllnesses, dataType: 'String', value: record.recentIllnesses || 'N/A' },
+        { field: 'Timestamp', dataType: 'Date', value: new Date(record.timestamp).toLocaleString() },
+        { field: 'Status', dataType: 'String', value: record.status },
+      ];
+      if (record.location) {
+        if (record.location.type === 'precise') {
+          data.push({ field: languageContent[language].location, dataType: 'Object', value: `Lat: ${record.location.latitude.toFixed(4)}, Long: ${record.location.longitude.toFixed(4)}` });
+        } else {
+          data.push({ field: languageContent[language].location, dataType: 'Object', value: `City: ${record.location.city}, Country: ${record.location.country}` });
+        }
+      }
+      return data;
+    };
+
+
+    const tableData = getTableData(selectedRecord);
+
+    return (
+      <PageLayout title={selectedRecord.name} onBack={() => handlePageChange('history')}>
+        <div className={`p-6 bg-white/30 rounded-xl shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:bg-white/40 hover:shadow-2xl`}>
+          <div className="flex flex-col md:flex-row md:space-x-8">
+            {/* Left section: Photo and Details */}
+            <div className="w-full md:w-1/3 flex flex-col items-center mb-6 md:mb-0">
+              {selectedRecord.facePhoto ? (
+                <img
+                  src={selectedRecord.facePhoto}
+                  alt="Child's face"
+                  className="w-40 h-40 rounded-full object-cover border-4 border-indigo-500 shadow-md"
+                />
+              ) : (
+                <div className="w-40 h-40 rounded-full bg-gray-200 flex items-center justify-center border-4 border-indigo-500 shadow-md">
+                  <UserCircle2 size={80} className="text-gray-400" />
+                </div>
+              )}
+              <h3 className="text-xl font-bold mt-4 text-center text-gray-900">{selectedRecord.name}</h3>
+              <p className="text-sm text-gray-500 font-mono">{selectedRecord.healthId}</p>
+            </div>
+            {/* Right section: Charts and information */}
+            <div className="w-full md:w-2/3 space-y-8">
+              {/* Growth Overview Section */}
+              <div className="bg-white/70 p-4 rounded-lg shadow-sm border border-gray-200">
+                <h4 className="text-lg font-bold mb-4 text-gray-900">{languageContent[language].growthOverview}</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Pie Chart */}
+                  <div className="flex flex-col items-center">
+                    <h5 className="text-md font-semibold text-gray-700">{languageContent[language].healthScoreBreakdown}</h5>
+                    <canvas ref={pieChartRef}></canvas>
+                  </div>
+                  {/* Line Chart */}
+                  <div className="flex flex-col items-center">
+                    <h5 className="text-md font-semibold text-gray-700">{languageContent[language].weightOverTime} / {languageContent[language].heightOverTime}</h5>
+                    <canvas ref={lineChartRef}></canvas>
+                  </div>
+                </div>
+              </div>
+
+              {/* Illness and Malnutrition Section */}
+              <div className="bg-white/70 p-4 rounded-lg shadow-sm border border-gray-200">
+                <h4 className="text-lg font-bold mb-2 text-gray-900">{languageContent[language].malnutritionAndIllnesses}</h4>
+                <div className="space-y-2 text-sm text-gray-700">
+                  <p><strong>{languageContent[language].malnutritionSigns}:</strong> {selectedRecord.malnutritionSigns || 'N/A'}</p>
+                  <p><strong>{languageContent[language].recentIllnesses}:</strong> {selectedRecord.recentIllnesses || 'N/A'}</p>
+                </div>
+              </div>
+
+              {/* SQL Table View Section */}
+              <div className="bg-white/70 p-4 rounded-lg shadow-sm border border-gray-200">
+                <h4 className="text-lg font-bold mb-4 text-gray-900">{languageContent[language].sqlTable}</h4>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          {languageContent[language].field}
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          {languageContent[language].dataType}
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          {languageContent[language].value}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {tableData.map((row, index) => (
+                        <tr key={index}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {row.field}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
+                            {row.dataType}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {row.value}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </PageLayout>
+    );
+  };
+
+
+  // Main render logic
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'login':
+        return <LoginPage />;
+      case 'loading':
+        return <LoadingPage onAuthComplete={() => handlePageChange('home')} />;
+      case 'home':
+        return <HomePage />;
+      case 'add-child':
+        return <AddChildPage />;
+      case 'history':
+        return <HistoryPage />;
+      case 'profile':
+        return <ProfilePage />;
+      case 'view-record':
+        return <RecordViewPage />;
+      default:
+        return <LoginPage />;
+    }
+  };
+
+  const getBackgroundVideo = () => {
+    if (currentPage === 'login') {
+      return "https://videos.pexels.com/video-files/12068305/12068305-hd_1920_1080_30fps.mp4";
+    }
+    if (currentPage === 'add-child') {
+      return "https://videos.pexels.com/video-files/16118544/16118544-hd_1920_1080_50fps.mp4";
+    }
+    return "https://videos.pexels.com/video-files/14617932/14617932-uhd_2560_1440_30fps.mp4";
+  };
+
+  return (
+    <>
+      {/* Google Fonts link for a fun but professional font (Poppins) */}
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&display=swap');`}</style>
+
+      <div className="relative min-h-screen">
+        {/* Conditional Background Render */}
+        {currentPage === 'history' || currentPage === 'view-record' ? (
+          // Use a div with background-image for the photo
+          <div
+            className={`absolute inset-0 w-full h-full bg-cover bg-center -z-10 filter transition-all duration-700 ${isSidebarOpen || currentPage === 'loading' ? 'blur-md' : 'blur-0'}`}
+            style={{ backgroundImage: `url('https://images.pexels.com/photos/11848618/pexels-photo-11848618.jpeg')` }}
+          ></div>
+        ) : currentPage === 'profile' ? (
+           <div
+              className={`absolute inset-0 w-full h-full bg-cover bg-center -z-10`}
+              style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%)' }}
+            ></div>
+        ) : (
+          // Use a video for all other pages
+          <video
+            className={`absolute inset-0 w-full h-full object-cover -z-10 filter transition-all duration-700 ${isSidebarOpen || currentPage === 'loading' ? 'blur-md' : 'blur-0'}`}
+            src={getBackgroundVideo()}
+            key={getBackgroundVideo()} // Key is needed to force re-render and change source
+            loop
+            autoPlay
+            muted
+            playsInline
+          ></video>
+        )}
+
+        {/* Semi-transparent overlay for readability and vignette effect */}
+        {currentPage !== 'profile' && <div className="absolute inset-0 bg-black opacity-30 -z-10"></div>}
+        {/* New Vignette Effect */}
+        <div className={`absolute inset-0 z-0 transition-opacity duration-500 ${(currentPage === 'login' || currentPage === 'loading' || currentPage === 'home') ? 'opacity-100' : 'opacity-0'}`} style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.4), transparent)' }}></div>
+
+        {/* Persistent top-bar for navigation and language toggle */}
+        {currentPage !== 'login' && (
+          <div className="absolute top-8 left-8 right-8 z-20 flex items-center justify-between">
+            {/* Updated: New div to contain both the icon, title, and menu button */}
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <PlantSaplingIcon className="h-6 w-6 text-white" />
+                <span className="text-xl font-bold text-white font-[Poppins]">{languageContent[language].title}</span>
+              </div>
+              <button onClick={toggleSidebar} className="p-2 rounded-full hover:bg-white/20 transition-colors">
+                <Menu size={24} className="text-white" />
+              </button>
+            </div>
+            <div className="flex items-center space-x-4">
+              {/* Online Indicator Component */}
+              <div className="flex items-center space-x-2 text-white">
+                <span className="text-sm font-semibold hidden md:block">
+                  {isOnline ? 'Online' : 'Offline'}
+                </span>
+                <span className={`h-3 w-3 rounded-full transition-colors duration-300 ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}></span>
+              </div>
+              <div className="bg-white/20 rounded-full flex p-2 backdrop-blur-sm">
+                <button
+                  onClick={() => setLanguage('en')}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${language === 'en' ? 'bg-blue-600 text-white shadow-lg' : 'text-white shadow-inner'}`}
+                >
+                  English
+                </button>
+                <button
+                  onClick={() => setLanguage('hi')}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${language === 'hi' ? 'bg-blue-600 text-white shadow-lg' : 'text-white shadow-inner'}`}
+                >
+                  हिन्दी
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Main Content Render */}
+        {renderPage()}
+
+        {/* Side Sliding Bar */}
+        <div
+          className={`fixed top-0 left-0 w-full h-full bg-black/50 backdrop-blur-sm z-30 transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+          onClick={toggleSidebar}
+        ></div>
+        <div
+          className={`fixed top-0 left-0 h-full w-64 bg-white/90 backdrop-blur-sm rounded-r-xl shadow-xl z-40 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        >
+          <div className="p-6">
+            <div className="flex items-center space-x-2 mb-8">
+              <PlantSaplingIcon className="h-8 w-8 text-indigo-600" />
+              <h2 className="text-xl font-extrabold text-indigo-600 font-[Poppins]">{languageContent[language].title}</h2>
+            </div>
+            <nav className="space-y-4">
+              <button
+                onClick={() => handlePageChange('home')}
+                className="w-full text-left flex items-center space-x-3 p-3 rounded-lg text-gray-800 font-semibold hover:bg-gray-200 transition-colors"
+              >
+                <Home size={20} />
+                <span>{languageContent[language].home}</span>
+              </button>
+              <button
+                onClick={() => handlePageChange('add-child')}
+                className="w-full text-left flex items-center space-x-3 p-3 rounded-lg text-gray-800 font-semibold hover:bg-gray-200 transition-colors"
+              >
+                <Plus size={20} />
+                <span>{languageContent[language].newChildRecordTitle}</span>
+              </button>
+              <button
+                onClick={() => handlePageChange('history')}
+                className="w-full text-left flex items-center space-x-3 p-3 rounded-lg text-gray-800 font-semibold hover:bg-gray-200 transition-colors"
+              >
+                <History size={20} />
+                <span>{languageContent[language].historyTitle}</span>
+              </button>
+              <button
+                onClick={() => handlePageChange('profile')}
+                className="w-full text-left flex items-center space-x-3 p-3 rounded-lg text-gray-800 font-semibold hover:bg-gray-200 transition-colors"
+              >
+                <UserCircle2 size={20} />
+                <span>{languageContent[language].profileTitle}</span>
+              </button>
+            </nav>
+          </div>
+        </div>
+        {/* Logout Confirmation Modal */}
+        {showLogoutModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-xl shadow-xl p-8 max-w-sm w-full text-center">
+              <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+              <h3 className="text-xl font-bold mb-2">{languageContent[language].logoutButton}</h3>
+              <p className="text-gray-600 mb-6">{languageContent[language].logOutMessage}</p>
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={() => setShowLogoutModal(false)}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                >
+                  {languageContent[language].logoutButton}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+};
+
+export default App;

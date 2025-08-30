@@ -35,10 +35,10 @@ function SignUPForm() {
     </Form> 
     <br></br>
     <div className='text-center'>
-    <p>Already have an account?</p>
-    <Link to="/login">
-    <Button variant="outline-primary">LogIn</Button>
-    </Link>
+    <p>Already have an account? <Link to="/login">
+    Log in
+    </Link></p>
+    
     </div>
     </Card.Body>
     </Card>

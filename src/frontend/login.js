@@ -12,19 +12,21 @@ function LoginForm() {
         <Card.Title>Login</Card.Title>
         <Form>
       <Form.Group className="mb-3" controlId="formBasicEmail">
-        <Form.Control type="text" placeholder="National ID" />
+        <Form.Control type="text" placeholder="Your ID" />
       </Form.Group>
       <Form.Group className="mb-3" controlId="formBasicPassword">
-        <Form.Control type="text" placeholder="Enter capcha" />
+        <Form.Control type="password" placeholder="Enter password" />
       </Form.Group>
       <Button variant="primary" type="submit">
         Login
       </Button>
     </Form> 
-    <p>Don't have an account?</p>
-    <Link to="/">
-    <Button variant="outline-primary">Sign Up</Button>
+    <p>Don't have an account?
+      <Link to="/">
+    Sign up
     </Link>
+    </p>
+    
     </Card.Body>
     </Card>
     </div>

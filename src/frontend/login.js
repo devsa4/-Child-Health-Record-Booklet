@@ -1,6 +1,7 @@
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Card from 'react-bootstrap/Card';
+import { Link } from 'react-router-dom';
 
 function LoginForm() {
   return (
@@ -8,7 +9,7 @@ function LoginForm() {
         minHeight: "100vh",}}>
     <Card style={{ width: '30rem',backgroundColor: "rgba(132, 232, 217, 1)" }} className="position-relative position-absolute top-50 start-50 translate-middle text-center">
       <Card.Body>  
-        <Card.Title>eSignet Login</Card.Title>
+        <Card.Title>Login</Card.Title>
         <Form>
       <Form.Group className="mb-3" controlId="formBasicEmail">
         <Form.Control type="text" placeholder="National ID" />
@@ -20,6 +21,10 @@ function LoginForm() {
         Login
       </Button>
     </Form> 
+    <p>Don't have an account?</p>
+    <Link to="/">
+    <Button variant="outline-primary">Sign Up</Button>
+    </Link>
     </Card.Body>
     </Card>
     </div>

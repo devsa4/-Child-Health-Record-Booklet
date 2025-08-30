@@ -1,9 +1,14 @@
 import React from 'react';
 import LoginForm from './frontend/login';
+import SignUPForm from './frontend/signup';
+import { Routes, Route } from "react-router-dom";
 
 function App() {
   return (
-    <LoginForm/>
+    <Routes>
+      <Route path="/" element={<SignUPForm/>}/>
+      <Route path="/login" element={<LoginForm/>}/>
+    </Routes>
   );
 }
 

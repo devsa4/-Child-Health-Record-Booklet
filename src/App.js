@@ -1,6 +1,6 @@
 import React from 'react';
 import LoginForm from './frontend/login';
-import SignUPForm from './frontend/signup';
+import SignUPForm from './frontend/SignUPForm';
 import { Routes, Route } from "react-router-dom";
 
 function App() {

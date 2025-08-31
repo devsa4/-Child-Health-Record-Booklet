@@ -43,7 +43,7 @@ function LoginForm() {
                   <FaUser className="input-icon" />
                   <Form.Control
                     type="text"
-                    placeholder="Your ID"
+                    placeholder="Your National ID"
                     autoComplete="username"
                     aria-label="User ID"
                   />

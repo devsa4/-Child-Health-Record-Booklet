@@ -1,13 +1,15 @@
 import React from 'react';
-import LoginForm from './frontend/login';
-import SignUPForm from './frontend/SignUPForm';
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route } from 'react-router-dom';
+import LoginForm from './components/LoginForm';
+import SignUpForm from './components/SignUp';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './App.css';
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<SignUPForm/>}/>
-      <Route path="/login" element={<LoginForm/>}/>
+      <Route path="/" element={<LoginForm />} />
+      <Route path="/signup" element={<SignUpForm />} />
     </Routes>
   );
 }

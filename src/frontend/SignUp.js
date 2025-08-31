@@ -4,6 +4,7 @@ import Form from 'react-bootstrap/Form';
 import Card from 'react-bootstrap/Card';
 import Modal from 'react-bootstrap/Modal';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 import {
   FaUser,
   FaEnvelope,
@@ -14,9 +15,17 @@ import {
 import './SignUp.css';
 
 function SignUpForm() {
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
+  const [isAdult, setIsAdult] = useState(false);
   const [nationalId, setNationalId] = useState('');
   const [showTerms, setShowTerms] = useState(false);
 
+  // Auto-generate National ID on mount
   useEffect(() => {
     const generateNationalId = () => {
       const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -26,8 +35,42 @@ function SignUpForm() {
     setNationalId(generateNationalId());
   }, []);
 
-  const handleShowTerms = () => setShowTerms(true);
-  const handleCloseTerms = () => setShowTerms(false);
+  // Handle input changes
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // Handle form submit
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (formData.password !== formData.confirmPassword) {
+      alert("Passwords don't match!");
+      return;
+    }
+
+    try {
+      const res = await axios.post('http://localhost:5000/signup', {
+        fullName: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+        isAdult,
+        nationalId,
+      });
+
+      alert(res.data.message || "Signup successful!");
+      // Reset form
+      setFormData({ fullName: '', email: '', password: '', confirmPassword: '' });
+      setIsAdult(false);
+      // regenerate ID for next signup
+      const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const randomPart = Math.floor(100000 + Math.random() * 900000);
+      setNationalId(`NID-${datePart}-${randomPart}`);
+    } catch (err) {
+      console.error('Frontend error:', err.response || err);
+      alert('Signup failed: ' + (err.response?.data?.message || err.message));
+    }
+  };
 
   return (
     <>
@@ -48,13 +91,16 @@ function SignUpForm() {
               Sign Up
             </Card.Title>
 
-            <Form>
+            <Form onSubmit={handleSubmit}>
               <Form.Group className="mb-3">
                 <div className="d-flex align-items-center">
                   <FaUser className="me-2 text-white" />
                   <Form.Control
                     className="signup-input"
                     type="text"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleChange}
                     placeholder="Full Name"
                     required
                   />
@@ -67,6 +113,9 @@ function SignUpForm() {
                   <Form.Control
                     className="signup-input"
                     type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
                     placeholder="Email Address"
                     required
                   />
@@ -79,6 +128,9 @@ function SignUpForm() {
                   <Form.Control
                     className="signup-input"
                     type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
                     placeholder="Password"
                     required
                   />
@@ -91,6 +143,9 @@ function SignUpForm() {
                   <Form.Control
                     className="signup-input"
                     type="password"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
                     placeholder="Confirm Password"
                     required
                   />
@@ -114,11 +169,18 @@ function SignUpForm() {
 
               <Form.Group className="mb-3">
                 <div className="signup-consent">
-                  <Form.Check type="checkbox" required className="me-2" />
+                  <Form.Check
+                    type="checkbox"
+                    label="I am over 18 years old"
+                    checked={isAdult}
+                    onChange={(e) => setIsAdult(e.target.checked)}
+                    className="me-2"
+                    required
+                  />
                   <span>
-                    I confirm that I am over 18 years old and agree to the{' '}
+                    I agree to the{' '}
                     <span
-                      onClick={handleShowTerms}
+                      onClick={() => setShowTerms(true)}
                       className="text-decoration-underline text-info"
                       style={{ cursor: 'pointer' }}
                     >
@@ -131,6 +193,7 @@ function SignUpForm() {
               <Button
                 type="submit"
                 className="signup-button d-flex align-items-center justify-content-center gap-2"
+                disabled={!isAdult}
               >
                 <FaUserPlus />
                 Sign Up
@@ -139,7 +202,7 @@ function SignUpForm() {
 
             <p className="signup-text mt-3 text-white">
               Already have an account?{' '}
-              <Link to="/" className="text-decoration-none text-info">
+              <Link to="/login" className="text-decoration-none text-info">
                 Log in
               </Link>
             </p>
@@ -148,7 +211,7 @@ function SignUpForm() {
       </div>
 
       {/* Terms & Conditions Modal */}
-      <Modal show={showTerms} onHide={handleCloseTerms} centered>
+      <Modal show={showTerms} onHide={() => setShowTerms(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Terms & Conditions</Modal.Title>
         </Modal.Header>
@@ -167,7 +230,7 @@ function SignUpForm() {
           </p>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseTerms}>
+          <Button variant="secondary" onClick={() => setShowTerms(false)}>
             Close
           </Button>
         </Modal.Footer>

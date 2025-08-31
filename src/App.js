@@ -1,7 +1,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import LoginForm from './components/LoginForm';
-import SignUpForm from './components/SignUp';
+import LoginForm from './frontend/LoginForm';
+import SignUpForm from './frontend/SignUp';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 

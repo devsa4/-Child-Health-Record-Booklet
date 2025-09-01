@@ -3,7 +3,7 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Card from 'react-bootstrap/Card';
 import Modal from 'react-bootstrap/Modal';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   FaUser,
@@ -24,7 +24,7 @@ function SignUpForm() {
   const [isAdult, setIsAdult] = useState(false);
   const [nationalId, setNationalId] = useState('');
   const [showTerms, setShowTerms] = useState(false);
-
+  const navigate = useNavigate();
   // Auto-generate National ID on mount
   useEffect(() => {
     const generateNationalId = () => {
@@ -58,11 +58,11 @@ function SignUpForm() {
         nationalId,
       });
 
-      alert(res.data.message || "Signup successful!");
-      // Reset form
+      //alert(res.data.message || "Signup successful!");
       setFormData({ fullName: '', email: '', password: '', confirmPassword: '' });
       setIsAdult(false);
-      // regenerate ID for next signup
+      navigate('/home');
+
       const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const randomPart = Math.floor(100000 + Math.random() * 900000);
       setNationalId(`NID-${datePart}-${randomPart}`);
@@ -193,7 +193,7 @@ function SignUpForm() {
               <Button
                 type="submit"
                 className="signup-button d-flex align-items-center justify-content-center gap-2"
-                disabled={!isAdult}
+                disabled={!isAdult} // ✅ Disabled until checkbox is checked
               >
                 <FaUserPlus />
                 Sign Up
@@ -202,7 +202,7 @@ function SignUpForm() {
 
             <p className="signup-text mt-3 text-white">
               Already have an account?{' '}
-              <Link to="/login" className="text-decoration-none text-info">
+              <Link to="/" className="text-decoration-none text-info">
                 Log in
               </Link>
             </p>

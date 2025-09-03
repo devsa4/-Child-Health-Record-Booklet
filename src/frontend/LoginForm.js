@@ -7,6 +7,7 @@ import axios from 'axios';
 import { FaUser, FaLock, FaSignInAlt } from 'react-icons/fa';
 import { MdSecurity } from 'react-icons/md';
 import './LoginForm.css';
+import { syncUsers } from "../utils/indexeddb";
 
 function LoginForm() {
   const [nationalId, setNationalId] = useState('');
@@ -15,6 +16,9 @@ function LoginForm() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
+    if (navigator.onLine) {
+      syncUsers(); // optional sync on login
+    }
     if (!nationalId || !password) {
       alert('Please enter both National ID and password.');
       return;

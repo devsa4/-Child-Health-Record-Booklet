@@ -1,0 +1,890 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+}
+.video-background-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+
+/* Background Video */
+.background-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+
+/* Dark Overlay */
+.background-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Bottom Vignette */
+.bottom-vignette {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 120px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
+  z-index: 0;
+  pointer-events: none;
+}
+/* Top-Left Brand */
+.top-left-brand {
+  position: absolute !important;
+  top: 14px !important;
+  left: 16px !important;
+  z-index: 2 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.4rem !important;
+  opacity: 0.85 !important;
+}
+
+.brand-icon {
+  font-size: 1.4rem !important;
+  color: white !important;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.2)) !important;
+}
+
+.brand-title {
+  font-size: 1.50rem !important;
+  font-weight: 600 !important;
+  color: white !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3) !important;
+  font-family: 'Poppins', sans-serif !important;
+}
+
+.menu-icon {
+  font-size: 1.4rem !important;
+  color: white !important;
+  margin-left: 0.5rem !important;
+  cursor: pointer !important;
+  transition: transform 0.2s ease !important;
+}
+
+.menu-icon:hover {
+  transform: scale(1.1) !important;
+}
+/* Sidebar (hidden by default) */
+.sidebar {
+  position: fixed;
+  top: 60px;
+  left: -260px; /* hidden off-screen */
+  width: 240px;
+  height: 80vh;
+  background-color: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  padding: 1.2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  transition: left 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+  z-index: 2000; /* keep above overlay */
+}
+
+/* Sidebar when open */
+.sidebar.open {
+  left: 20px; /* Slides in */
+  opacity: 1;
+}
+
+/* Backdrop (click to close) */
+.sidebar-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1500; /* behind sidebar but above content */
+}
+
+.sidebar-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  color: #333;
+}
+
+.sidebar-links li {
+  padding: 0.6rem 0;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.sidebar-links li:hover {
+  color: #007bff;
+}
+
+.logout-button {
+  margin-top: auto; /* Pushes it to the bottom */
+  background-color: #e63946;
+  color: white;
+  border: none;
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  transition: background-color 0.3s ease;
+}
+
+.logout-button:hover {
+  background-color: #d62828;
+}
+/* Language Toggle Glass Card */
+.language-card {
+  position: absolute;
+  top: 6px; /* previously 12px, moved up */
+  right: 12px;
+  z-index: 2;
+  padding: 0.6rem 1rem;
+  border-radius: 20px;
+  background: linear-gradient(
+    to bottom right,
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0.06)
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.photo-button-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+
+
+.language-toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+.photo-icon {
+  margin-right: 8px;
+  font-size: 1rem;
+  vertical-align: middle;
+}
+.photo-button-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/* Make both buttons exactly the same size */
+.photo-button-row .btn-purple,
+.photo-button-row .btn-blue {
+  flex: 1; /* equal width */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px; /* fixed height */
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-align: center;
+  padding: 0 16px; /* horizontal padding */
+  transition: all 0.3s ease;
+  min-width: 0; /* prevent extra width */
+}
+
+/* Upload button */
+.btn-purple {
+  background: linear-gradient(135deg, #6f42c1, #a070f0);
+  color: #fff;
+  border: none;
+}
+
+.btn-purple:hover {
+  background: linear-gradient(135deg, #a070f0, #6f42c1);
+  transform: translateY(-2px) scale(1.02);
+}
+
+/* Capture button */
+.btn-blue {
+  background: linear-gradient(90deg, #1e90ff, #4facff);
+  color: #fff;
+  border: none;
+}
+.btn-retake {
+  display: block;
+  margin: 10px auto 0 auto; /* center horizontally */
+  padding: 8px 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #fff;
+  background: linear-gradient(135deg, #ff4b5c, #ff2d00);
+  border: none;
+  border-radius: 20px; /* make corners round like Upload button */
+  box-shadow: 0 4px 8px rgba(83, 81, 81, 0.4);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-retake:hover {
+  box-shadow: 0 6px 12px rgba(36, 36, 36, 0.6);
+  transform: translateY(-2px);
+}
+
+
+.btn-blue:hover {
+  background: linear-gradient(135deg, #4da6ff, #007bff);
+  transform: translateY(-2px) scale(1.02);
+}
+
+form .form-group {
+  margin-bottom: 1.8rem !important; /* increase spacing between form entries */
+}
+
+form textarea {
+  resize: vertical; /* allows resizing, keeps spacing nice */
+}
+
+.form-title-icon {
+  margin-right: 8px;
+  vertical-align: middle;
+  font-size: 1.6rem;
+  color: #007bff;
+}
+/* Photo buttons (Upload & Capture) same size */
+.photo-button-row .photo-button {
+  flex: 1; /* equal width for both buttons */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 0; /* height */
+  border-radius: 24px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  color: #fff;
+}
+
+/* Upload Picture button (purple gradient) */
+.photo-button-row .btn-upload {
+  background: linear-gradient(135deg, #6f42c1, #a070f0);
+}
+
+.photo-button-row .btn-upload:hover {
+  background: linear-gradient(135deg, #a070f0, #6f42c1);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Capture Photo button (blue gradient) */
+.photo-button-row .btn-capture {
+  background: linear-gradient(135deg, #1e90ff, #4facff);
+}
+
+.photo-button-row .btn-capture:hover {
+  background: linear-gradient(135deg, #4da6ff, #007bff);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Icon inside buttons */
+.photo-button-row .photo-icon {
+  font-size: 1rem;
+  vertical-align: middle;
+}
+
+/* Camera modal inside the form popup */
+.camera-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 400px; /* fit nicely inside the form */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  z-index: 1000;
+}
+
+.camera-modal.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.camera-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 15px;
+  text-align: center;
+  width: 100%;
+  animation: fadeIn 0.4s ease;
+}
+
+.camera-content video {
+  width: 100%;
+  border-radius: 10px;
+  max-height: 300px;
+  object-fit: cover;
+}
+
+.camera-buttons {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.camera-buttons .btn-blue,
+.camera-buttons .btn-red {
+  padding: 12px 25px;
+  font-size: 1.1rem;
+  border-radius: 25px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.camera-buttons .btn-blue:hover {
+  background-color: #0056b3;
+  transform: scale(1.05);
+}
+
+.camera-buttons .btn-red:hover {
+  background-color: #c82333;
+  transform: scale(1.05);
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Photo preview styling */
+.photo-preview img {
+  display: block;
+  margin: 10px auto 0;
+  width: 200px;
+  height: 200px;
+  border-radius: 15px;
+  object-fit: cover;
+}
+.btn-blue {
+  background: linear-gradient(90deg, #1e90ff, #4facff); /* gradient */
+  color: #fff;
+  padding: 10px 20px; /* same as upload button */
+  border-radius: 25px;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-blue:hover {
+  background: linear-gradient(90deg, #1c86ee, #3ca0f0);
+  transform: scale(1.05);
+}
+
+.btn-blue:hover {
+  background: linear-gradient(135deg, #4da6ff, #007bff);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px) scale(1.02);
+}
+
+/* Make icons aligned */
+.photo-button-row .photo-icon {
+  font-size: 1rem;
+  vertical-align: middle;
+}
+
+.top-left-brand {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  opacity: 0.85;
+}
+
+.brand-icon {
+  font-size: 1.4rem;
+  color: white;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.2));
+}
+
+.brand-title {
+  font-size: 1.50rem;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin: 0;
+  white-space: nowrap;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+  font-family: 'Poppins', sans-serif;
+}
+
+
+.top-bar {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px; /* space between indicator and card */
+  z-index: 10;
+}
+
+/* Online Indicator aligned with the title inside the form card */
+.child-form-container .online-indicator {
+  position: absolute;
+  top: 48px; /* align with title */
+  right: 20px; /* slight right padding */
+  padding: 4px 10px; /* compact padding */
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(0,128,0,0.85), rgba(0,200,0,0.7));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(6px);
+  z-index: 5;
+}
+@keyframes scaleUp {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.success-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.btn-red {
+  background-color: #FF4C4C;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.btn-red:hover {
+  background-color: #e04343;
+}
+.btn {
+  padding: 10px 20px;
+  border-radius: 25px; /* Fully rounded corners */
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 130px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.btn-close {
+  background-color: #FF4C4C;
+  color: #fff;
+}
+
+.btn-close:hover {
+  background-color: #e04343;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+  transform: translateY(-4px); /* Lift effect */
+}
+
+.btn-view {
+  background-color: #007BFF;
+  color: #fff;
+}
+
+.btn-view:hover {
+  background-color: #0069d9;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+  transform: translateY(-4px); /* Lift effect */
+}
+
+
+
+.success-content {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+}
+
+
+.child-form-container .online-indicator.offline {
+  background: linear-gradient(135deg, rgba(200,0,0,0.85), rgba(255,50,50,0.7));
+}
+
+
+.online-indicator.online {
+  background-color: rgba(40, 167, 69, 0.8); /* green */
+}
+
+.online-indicator.offline {
+  background-color: rgba(220, 53, 69, 0.8); /* red */
+}
+
+
+.video-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
+}
+
+.top-header {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+
+.glass-toggle {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.hover-card {
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.hover-card:hover {
+  box-shadow: 0 12px 32px rgba(0, 123, 255, 0.2);
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.92);
+}
+.child-form-container {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 24px;
+  margin: 40px auto;
+  max-width: 600px;
+  width: 90%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  z-index: 10; /* make sure it’s above other elements */
+}
+
+/* Hover effect with shadow and lift */
+.child-form-container:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 
+              0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+
+.child-form-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.child-form-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+
+/* Add this to your CSS */
+.glass-card {
+  position: relative !important;
+  background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)) !important;
+  backdrop-filter: blur(5px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 20px !important;
+  padding: 2.5rem !important;
+  width: 600px !important;
+  max-width: 100% !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4) !important;
+  color: #fff !important;
+  animation: fadeInUp 1.5s ease forwards; /* animation added */
+  transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+  overflow: hidden !important;
+}
+
+/* Keyframes for fade in and slide up */
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.15); /* soft white overlay */
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 20px;
+}
+.consent-text {
+  font-weight: 500;
+  font-size: 1rem;
+  color: #333;
+}
+.consent-label {
+  font-weight: 500;
+  font-size: 1rem;
+  color: #333;
+}
+.tightest-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  font-size: 1rem;
+  color: #333;
+}
+.custom-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: 1rem;
+  color: #333;
+  cursor: pointer;
+  user-select: none;
+}
+
+.custom-checkbox input[type="checkbox"] {
+  display: none;
+}
+
+.checkbox-box {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #007bff;
+  background-color: #fff;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.custom-checkbox input[type="checkbox"]:checked + .checkbox-box::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  width: 3px;
+  height: 7px;
+  border: solid #007bff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+
+
+.form-check-input {
+  transform: scale(1.2);
+  margin-top: 0.1rem;
+}
+
+.toggle-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.toggle-group input[type="radio"] {
+  display: none;
+}
+
+.toggle-group label {
+  padding: 8px 16px;
+  border: 2px solid #007bff;
+  border-radius: 20px;
+  color: #007bff;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.toggle-group input[type="radio"]:checked + label {
+  background-color: #007bff;
+  color: white;
+}
+
+
+.glass-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+form .form-group {
+  margin-bottom: 1.2rem !important;
+}
+
+form label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 500 !important;
+  color: #f0f0f0 !important;
+  font-size: 0.95rem !important;
+}
+
+
+form input,
+form textarea {
+  background-color: rgba(255, 255, 255, 0.95) !important; /* solid white */
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  color: #333 !important;
+  width: 100% !important;
+  border-radius: 12px !important;
+  padding: 0.6rem 1rem !important;
+  font-family: 'Poppins', sans-serif !important;
+  font-size: 0.95rem !important;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+
+form input:focus,
+form textarea:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 8px rgba(0, 123, 255, 0.4) !important;
+  outline: none !important;
+}
+.form-button-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+}
+.save-record-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(
+    135deg,
+    #28a745,
+    #1fa53c,
+    #5ce67a
+  );
+  border: 2px solid #28a745;
+  color: white;
+  padding: 10px 200px;
+  border-radius: 30px;
+  font-size: 1.1rem;
+  font-weight: 600; /* slightly lighter for professional look */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* clean, modern font */
+  letter-spacing: 0.5px; /* subtle spacing */
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+}
+
+
+.save-record-btn:hover {
+  background: linear-gradient(
+    135deg,
+    #1fa53c,
+    #28a745,
+    #5ce67a
+  );
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+}
+
+
+
+.save-record-btn:hover {
+  background: linear-gradient(135deg, #1fa53c, #28a745);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+
+.save-icon {
+  font-size: 1rem;
+  margin-right: 6px;
+}

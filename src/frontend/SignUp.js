@@ -13,6 +13,7 @@ import {
   FaUserPlus
 } from 'react-icons/fa';
 import './SignUp.css';
+import { addUser } from "../utils/indexeddb"; 
 
 function SignUpForm() {
   const [formData, setFormData] = useState({
@@ -42,35 +43,57 @@ function SignUpForm() {
 
   // Handle form submit
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
-      return;
-    }
+  if (formData.password !== formData.confirmPassword) {
+    alert("Passwords don't match!");
+    return;
+  }
 
-    try {
-      const res = await axios.post('http://localhost:5000/signup', {
-        fullName: formData.fullName,
-        email: formData.email,
-        password: formData.password,
-        isAdult,
-        nationalId,
-      });
+  // Generate NID once
+  const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const randomPart = Math.floor(100000 + Math.random() * 900000);
+  const nid = `NID-${datePart}-${randomPart}`;
 
-      //alert(res.data.message || "Signup successful!");
-      setFormData({ fullName: '', email: '', password: '', confirmPassword: '' });
-      setIsAdult(false);
-      navigate('/home');
-
-      const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-      const randomPart = Math.floor(100000 + Math.random() * 900000);
-      setNationalId(`NID-${datePart}-${randomPart}`);
-    } catch (err) {
-      console.error('Frontend error:', err.response || err);
-      alert('Signup failed: ' + (err.response?.data?.message || err.message));
-    }
+  const user = {
+    fullName: formData.fullName,
+    email: formData.email,
+    password: formData.password,
+    isAdult,
+    nationalId: nid,
   };
+
+  try {
+    if (navigator.onLine) {
+      try {
+        // ONLINE → Save to backend
+        await axios.post("http://localhost:5000/signup", user);
+        navigate("/home");
+      } catch (err) {
+        console.warn("⚠️ Online save failed, falling back to IndexedDB:", err);
+        await addUser(user);
+        alert("Saved locally because server is unreachable.");
+      }
+    } else {
+      // OFFLINE → Save to IndexedDB
+      await addUser(user);
+      alert("⚠️ You are offline. Data saved locally and will sync later.");
+    }
+
+    // Reset form always
+    setFormData({
+      fullName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    });
+    setIsAdult(false);
+    setNationalId(nid);
+  } catch (err) {
+    console.error("❌ Error saving user:", err);
+    alert("Signup failed: " + (err.response?.data?.message || err.message));
+  }
+};
 
   return (
     <>

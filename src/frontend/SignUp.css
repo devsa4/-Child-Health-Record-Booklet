@@ -162,24 +162,57 @@
 }
 
 /* Consent */
-.signup-consent {
-  display: flex !important;
-  align-items: center !important;
-  font-size: 13px !important;
-  color: #fff !important;
-  margin-top: 12px !important;
-  text-align: left !important;
-  animation: fadeInUp 0.8s ease forwards !important;
-  animation-delay: 0.7s !important;
-  animation-fill-mode: forwards !important;
-}
-
 .signup-consent input[type="checkbox"] {
-  width: 14px !important;
-  height: 14px !important;
+  width: 10px !important;       /* smaller size */
+  height: 10px !important;      /* square */
   margin-right: 8px !important;
   accent-color: #007bff !important;
+  border-radius: 0 !important;  /* makes it perfectly square */
+  appearance: none !important;  /* ensures consistent shape across browsers */
+  border: 1px solid #007bff !important;
+  background-color: transparent !important;
+  cursor: pointer !important;
+  display: inline-block !important;
+  position: relative !important;
 }
+
+/* Add checkmark style */
+.signup-consent input[type="checkbox"] {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+
+  width: 12px !important;      /* smaller */
+  height: 12px !important;     /* square */
+  margin-right: 8px !important;
+
+  border: 1.5px solid #007bff !important;
+  border-radius: 0 !important; /* square shape */
+  background-color: transparent !important;
+
+  cursor: pointer !important;
+  display: inline-block !important;
+  position: relative !important;
+}
+
+/* When checked */
+.signup-consent input[type="checkbox"]:checked {
+  background-color: transparent !important;
+}
+
+.signup-consent input[type="checkbox"]:checked::after {
+
+  position: absolute !important;
+  top: 2px !important;
+  left: 4px !important;
+  width: 3px !important;
+  height: 6px !important;
+  border: solid white !important;
+  border-width: 0 2px 2px 0 !important;
+  transform: rotate(45deg) !important;
+}
+
+
 
 /* Text for "Already have an account?" */
 .signup-text {

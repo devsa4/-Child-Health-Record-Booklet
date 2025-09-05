@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Card from 'react-bootstrap/Card';
-import { Link,useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FaUser, FaLock, FaSignInAlt } from 'react-icons/fa';
 import { MdSecurity } from 'react-icons/md';
@@ -12,34 +12,35 @@ import { syncUsers } from "../utils/indexeddb";
 function LoginForm() {
   const [nationalId, setNationalId] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
+
   const handleLogin = async (e) => {
     e.preventDefault();
 
     if (navigator.onLine) {
-      syncUsers(); // optional sync on login
+      syncUsers();
     }
     if (!nationalId || !password) {
-      alert('Please enter both National ID and password.');
+      setErrorMessage('Please enter both National ID and password.');
       return;
     }
 
     try {
-      // ✅ Fixed Axios URL to point to correct backend
       const res = await axios.post('http://localhost:5000/login', {
         nationalId: nationalId.trim(),
         password: password.trim(),
       });
 
-      //alert(res.data.message || 'Login successful!');
       console.log('Logged in user:', res.data.user);
 
       setNationalId('');
       setPassword('');
+      setErrorMessage('');
       navigate('/home');
     } catch (err) {
       console.error('Login error:', err.response || err);
-      alert('Login failed: ' + (err.response?.data?.message || err.message));
+      setErrorMessage(err.response?.data?.message || 'Invalid National ID or Password.');
     }
   };
 
@@ -104,6 +105,18 @@ function LoginForm() {
           </Card.Body>
         </Card>
       </div>
+
+      {/* Error Popup */}
+      {errorMessage && (
+        <div className="error-popup-overlay">
+          <div className="error-popup">
+            <p>{errorMessage}</p>
+            <button onClick={() => setErrorMessage('')} className="close-popup-btn">
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

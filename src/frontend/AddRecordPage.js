@@ -18,6 +18,7 @@ function AddRecordPage() {
   const [illnesses, setIllnesses] = useState("");
   const [malnutrition, setMalnutrition] = useState("");
   const [records, setRecords] = useState([]);
+  const [showInvalidIdPopup, setShowInvalidIdPopup] = useState(false);
   const sidebarRef = useRef();
   const navigate = useNavigate();
 
@@ -93,7 +94,7 @@ function AddRecordPage() {
       setIllnesses("");
       setMalnutrition("");
     } else {
-      alert("Child not found with this Unique ID");
+      setShowInvalidIdPopup(true);
       setChildData(null);
     }
   };
@@ -139,13 +140,11 @@ function AddRecordPage() {
 
   return (
     <div className="add-record-page">
-        <div className="moving-backgrounds">
-  <img src="/carousel1.jpg" alt="background 1" />
-  <img src="/carousel2.jpg" alt="background 2" />
-  <img src="/carousel3.jpg" alt="background 3" />
-</div>
-
-<div className="background-overlay"></div>
+      <div className="moving-backgrounds">
+        <img src="/carousel1.jpg" alt="background 1" />
+        <img src="/carousel2.jpg" alt="background 2" />
+        <img src="/carousel3.jpg" alt="background 3" />
+      </div>
 
       <div className="background-overlay"></div>
 
@@ -159,7 +158,7 @@ function AddRecordPage() {
         <ul className="sidebar-links">
           <li onClick={() => navigate('/home')}>{content[language].home}</li>
           <li onClick={() => navigate('/register')}>{content[language].register}</li>
-          <li >{currentContent.update}</li>
+          <li>{currentContent.update}</li>
           <li onClick={() => navigate('/view-records')}>{content[language].view}</li>
           <li>{content[language].profile}</li>
         </ul>
@@ -187,7 +186,6 @@ function AddRecordPage() {
           <div className="child-record-form">
             <div className="child-info">
               <p><strong>{currentContent.enterId}:</strong> {childData.id}</p>
-             
               <p><strong>{currentContent.name}:</strong> {childData.name}</p>
               <p><strong>{currentContent.age}:</strong> {childData.age}</p>
               <p><strong>{currentContent.dob}:</strong> {childData.dob}</p>
@@ -214,6 +212,17 @@ function AddRecordPage() {
           </div>
         )}
       </div>
+
+      {/* Invalid ID Popup */}
+      {showInvalidIdPopup && (
+        <div className="popup-overlay" onClick={() => setShowInvalidIdPopup(false)}>
+          <div className="popup-card" onClick={(e) => e.stopPropagation()}>
+            <h2>Invalid Unique ID</h2>
+            <p>No child found with this ID.</p>
+            <button onClick={() => setShowInvalidIdPopup(false)}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

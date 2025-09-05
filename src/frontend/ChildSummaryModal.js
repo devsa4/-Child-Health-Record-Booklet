@@ -29,6 +29,9 @@ function ChildSummaryModal({ child, onClose, onDelete, language }) {
   const [spinPhoto, setSpinPhoto] = useState(false);
   const [showUniqueIdPopup, setShowUniqueIdPopup] = useState(false);
   const [uniqueIdInput, setUniqueIdInput] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showInvalidIdPopup, setShowInvalidIdPopup] = useState(false);
+  const [ setShowDeleteSuccess] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -76,7 +79,10 @@ function ChildSummaryModal({ child, onClose, onDelete, language }) {
       enterId: "Enter Unique ID",
       promptId: "Please enter the unique ID to download the record.",
       invalidId: "Invalid Unique ID.",
-      close: "Close"
+      deleteSuccess: "Record deleted successfully.",
+      close: "Close",
+      yes: "Yes",
+      no: "No"
     },
     hi: {
       download: "रिकॉर्ड डाउनलोड करें",
@@ -86,7 +92,10 @@ function ChildSummaryModal({ child, onClose, onDelete, language }) {
       enterId: "अद्वितीय आईडी दर्ज करें",
       promptId: "रिकॉर्ड डाउनलोड करने के लिए अद्वितीय आईडी दर्ज करें।",
       invalidId: "अमान्य अद्वितीय आईडी।",
-      close: "बंद करें"
+      deleteSuccess: "रिकॉर्ड सफलतापूर्वक हटा दिया गया।",
+      close: "बंद करें",
+      yes: "हाँ",
+      no: "नहीं"
     }
   };
 
@@ -110,7 +119,7 @@ function ChildSummaryModal({ child, onClose, onDelete, language }) {
       setShowUniqueIdPopup(false);
       setUniqueIdInput("");
     } else {
-      alert(currentContent.invalidId);
+      setShowInvalidIdPopup(true);
     }
   };
 
@@ -119,7 +128,17 @@ function ChildSummaryModal({ child, onClose, onDelete, language }) {
   };
 
   const handleDeleteClick = () => {
-    if (window.confirm(currentContent.confirmDelete)) onDelete(child.id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    onDelete(child.id);
+    setShowDeleteConfirm(false);
+    setShowDeleteSuccess(true);
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -153,11 +172,13 @@ function ChildSummaryModal({ child, onClose, onDelete, language }) {
 
         <div className="modal-actions">
           <button className="delete-button" onClick={handleDeleteClick}>{currentContent.delete}</button>
-          <button className="update-button" onClick={handleAddRecordClick}>
-            <FaEdit style={{marginRight:"6px"}} /> Update Record
-          </button>
+         <button className="update-card-btn" onClick={handleAddRecordClick}>
+  <FaEdit style={{ marginRight: "6px" }} /> {currentContent.update}
+</button>
+
         </div>
 
+        {/* Unique ID Popup */}
         {showUniqueIdPopup && (
           <div className="unique-id-modal-overlay" onClick={() => setShowUniqueIdPopup(false)}>
             <div className="unique-id-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -180,6 +201,28 @@ function ChildSummaryModal({ child, onClose, onDelete, language }) {
           </div>
         )}
 
+        {/* Invalid ID Popup */}
+        {showInvalidIdPopup && (
+          <div className="unique-id-modal-overlay" onClick={() => setShowInvalidIdPopup(false)}>
+            <div className="invalid-id-modal-content" onClick={(e) => e.stopPropagation()}>
+              <h2>{currentContent.invalidId}</h2>
+              <button onClick={() => setShowInvalidIdPopup(false)}>{currentContent.close}</button>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Success Popup */}
+        {showDeleteConfirm && (
+  <div className="unique-id-modal-overlay" onClick={cancelDelete}>
+    <div className="popup-card" onClick={(e) => e.stopPropagation()}>
+      <h2>{currentContent.confirmDelete}</h2>
+      <div className="delete-buttons">
+        <button onClick={confirmDelete}>{currentContent.yes}</button>
+        <button onClick={cancelDelete}>{currentContent.no}</button>
+      </div>
+    </div>
+  </div>
+)}
       </div>
     </div>
   );

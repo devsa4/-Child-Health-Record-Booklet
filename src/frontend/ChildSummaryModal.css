@@ -9,33 +9,59 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0,0,0,0.5);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: center; /* center the modal vertically */
+  padding: 0;
+  overflow: hidden; /* remove any scrolling */
   z-index: 1000;
+  overflow-y: scroll; /* still scrollable */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+.modal-overlay::-webkit-scrollbar {
+  width: 0px; /* Chrome, Safari, Opera */
+}
+/* Hide scrollbar but keep scrolling */
+body {
+  overflow-y: scroll; /* still scrollable */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
 }
 
-/* Main Modal Container */
+body::-webkit-scrollbar {
+  width: 0px; /* Chrome, Safari, Opera */
+  background: transparent; /* optional: just in case */
+}
+
+/* Modal card itself */
 .modal-content {
   background: #fff;
-  padding: 1.5rem;
-  border-radius: 1rem;
-  width: 500px;
-  max-width: 90%;
-  color: #000;
-  position: relative;
-  text-align: center;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  animation: popupIn 0.4s ease-out;
+  border-radius: 16px; /* Rounded corners */
+  padding: 20px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  overflow: visible; /* no internal scroll */
+  max-height: 90vh; /* optional: fit within screen */
 }
 
-/* Modal Header Buttons */
+/* Optional: smooth fade-in */
+.animate-popup {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+
 .modal-buttons-top {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 12px;
 }
 
 .modal-close {
@@ -183,4 +209,155 @@
 /* Apply animation when modal opens */
 .child-photo {
   animation: spinOnce 0.8s ease-out forwards; /* Spin once over 0.8s */
+}
+/* Overlay for all modals */
+.unique-id-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5); /* dimmed background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+/* White success popup */
+.success-id-modal-content {
+  background: #ffffff !important;
+  padding: 2rem !important;
+  border-radius: 20px !important;
+  width: 350px !important;
+  max-width: 90% !important;
+  text-align: center !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25) !important;
+}
+
+/* Success title */
+.success-id-modal-content h2 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #2e7d32; /* success green */
+  margin-bottom: 1.5rem;
+}
+
+/* Close button */
+
+/* Common popup card style */
+.popup-card {
+  background: #fff;
+  padding: 10px 14px;       /* smaller padding */
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  width: 220px;            /* keep narrow */
+  min-height: 80px;        /* shorter height */
+  text-align: center;
+  margin: auto;
+  color: black;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.popup-card h2 {
+  font-size: 1rem;         /* smaller title */
+  margin-bottom: 8px;      /* less space below */
+  line-height: 1.2; 
+   color: black;        /* tighter lines */
+}
+
+.delete-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;         /* less gap */
+}
+
+.delete-buttons button {
+  padding: 4px 10px;       /* smaller buttons */
+  font-size: 0.85rem;
+}
+
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+
+
+
+
+.delete-buttons button:first-child {
+  background: #e74c3c; /* red Yes */
+  color: white;
+}
+
+.delete-buttons button:last-child {
+  background: #bdc3c7; /* gray No */
+  color: black;
+}
+.update-card-btn {
+  background-color: #007bff;   /* Blue */
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.update-card-btn:hover {
+  background-color: #0056b3;  /* Darker blue */
+  transform: translateY(-2px);
+}
+.invalid-id-modal-content {
+  background-color: #fff; /* white card */
+  padding: 20px 25px;
+  border-radius: 10px;
+  width: 280px; /* small width */
+  max-width: 90%;
+  text-align: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  position: relative;
+}
+
+.invalid-id-modal-content h2 {
+  font-size: 1rem;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.invalid-id-modal-content button {
+  background-color: #007bff; /* blue button */
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.invalid-id-modal-content button:hover {
+  background-color: #0056b3; /* darker blue */
+  transform: translateY(-2px);
+}
+
+.unique-id-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.45); /* semi-transparent overlay */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import { MdFamilyRestroom } from "react-icons/md";
-import { FaBars, FaSearch } from "react-icons/fa";
+import { MdFamilyRestroom, MdChildCare } from "react-icons/md";
+import { FaBars } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import ChromaGrid from "./ChromaGrid";
 import ChildSummaryModal from "./ChildSummaryModal";
@@ -149,7 +149,10 @@ function ViewRecords() {
         </button>
       </div>
 
-      <h2 className="records-title">{content[language].viewRecords}</h2>
+      {/* Title with icon */}
+      <h2 className="records-title">
+        <MdChildCare className="title-icon" /> {content[language].viewRecords}
+      </h2>
 
       <div className="search-bar-wrapper">
         <input
@@ -159,11 +162,12 @@ function ViewRecords() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="search-bar"
         />
-        <FaSearch className="search-icon" />
       </div>
 
       {filteredRecords.length === 0 ? (
-        <p className="no-records">No records found.</p>
+        <div className="no-records-container">
+          <p>No Records Found</p>
+        </div>
       ) : (
         <ChromaGrid items={chromaItems} columns={3} rows={2} radius={220} />
       )}

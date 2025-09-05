@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from 'react-bootstrap';
 import { FaPlus, FaBars } from 'react-icons/fa';
 import { MdFamilyRestroom } from 'react-icons/md';
-import { useNavigate,Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import './Home.css';
 
 function Home() {
@@ -39,20 +39,28 @@ useEffect(() => {
 
   const content = {
     en: {
+       home:"Home",
       title: 'GROWTH GUARDIAN',
       subtitle: 'Empowering every child\'s journey',
       description:
         'A simple way to track your child\'s growth and well-being. Easily record their height and weight to see their progress over time and make sure they\'re on a healthy path.',
       register: 'Register a Child',
       update: 'Update Registered Child',
+      view:'View Child Record',
+      profile:'Your Profile',
+      logout:'Log Out'
     },
     hi: {
+      home:"होम",
       title: 'विकास संरक्षक',
       subtitle: 'हर बच्चे की यात्रा को सशक्त बनाना',
       description:
         'अपने बच्चे की वृद्धि और स्वास्थ्य को ट्रैक करने का एक सरल तरीका। उनकी ऊंचाई और वजन को आसानी से रिकॉर्ड करें और सुनिश्चित करें कि वे एक स्वस्थ रास्ते पर हैं।',
       register: 'नया बच्चा पंजीकृत करें',
       update: 'पंजीकृत बच्चे को अपडेट करें',
+      view:'बच्चों के रिकॉर्ड देखें',
+      profile:'अपनी प्रोफ़ाइल देखें',
+      logout:'लॉग आउट'
     },
   };
 
@@ -82,14 +90,13 @@ useEffect(() => {
 
           <div ref={sidebarRef} className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
             <ul className="sidebar-links">
-              <Link to= "/home" >Home</Link>
-              {/* <li>Home</li> */}
+              <li onClick={() => { navigate("/home"); setSidebarOpen(false); }}>{content[language].home}</li>
               <li onClick={() => navigate('/register')}>{content[language].register}</li>
-              <li>{content[language].update}</li>
-              <li>View Child Record</li>
-              <li>Your Profile</li>
+              <li onClick={() => navigate('/add-record/:childId')}>{content[language].update}</li>
+              <li onClick={() => navigate('/view-records')}>{content[language].view}</li>
+              <li onClick={() => navigate('/home')}>{content[language].profile}</li>
             </ul>
-            <button className="logout-button">Logout</button>
+            <button className="logout-button">{content[language].logout}</button>
           </div>
 
           <div className="language-card">
@@ -135,7 +142,8 @@ useEffect(() => {
                 </div>
               </Button>
 
-              <Button variant="outline-light" className="update-button">
+              <Button variant="outline-light" className="update-button"
+              onClick={() => navigate('/add-record/:childId')}>
                 {content[language].update}
               </Button>
             </div>

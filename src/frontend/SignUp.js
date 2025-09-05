@@ -78,6 +78,7 @@ function SignUpForm() {
       // OFFLINE → Save to IndexedDB
       await addUser(user);
       alert("⚠️ You are offline. Data saved locally and will sync later.");
+      navigate("/home");
     }
 
     // Reset form always

@@ -95,10 +95,19 @@ html, body {
   transform: scale(1.1) !important;
 }
 /* Sidebar (hidden by default) */
-.sidebar {
+/* Backdrop BELOW the sidebar */
+.sidebar-backdrop {
   position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 3000;
+}
+
+/* Sidebar ABOVE the backdrop */
+.sidebar {
+  position: fixed;   /* instead of absolute */
   top: 60px;
-  left: -260px; /* hidden off-screen */
+  left: -260px;      /* off screen initially */
   width: 240px;
   height: 80vh;
   background-color: white;
@@ -110,25 +119,45 @@ html, body {
   justify-content: flex-start;
   transition: left 0.3s ease, opacity 0.3s ease;
   opacity: 0;
-  z-index: 2000; /* keep above overlay */
+  z-index: 1000;     /* higher so it floats */
 }
 
-/* Sidebar when open */
 .sidebar.open {
-  left: 20px; /* Slides in */
+  left: 20px;        /* slide into view */
   opacity: 1;
 }
+.popup-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px; /* ✅ space between buttons */
+  margin-top: 20px;
+}
 
-/* Backdrop (click to close) */
+.popup-buttons .btn-blue,
+.popup-buttons .btn-red {
+  padding: 10px 20px;
+  border-radius: 50px; /* pill / round */
+  cursor: pointer;
+  border: none;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+
+.sidebar * {
+  pointer-events: auto;    /* belt-and-suspenders */
+}
 .sidebar-backdrop {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.3);
-  z-index: 1500; /* behind sidebar but above content */
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.3);
+  z-index: 99;
 }
+
+
 
 .sidebar-links {
   list-style: none;
@@ -572,10 +601,20 @@ form textarea {
 
 .success-content {
   background: #fff;
-  padding: 2rem;
+  padding: 20px 30px;
   border-radius: 12px;
   text-align: center;
+  display: flex;
+  flex-direction: column;   /* stack content */
+  align-items: center;
+  gap: 16px;                /* adds space between elements (buttons, text, etc.) */
 }
+
+/* Extra spacing for buttons */
+.success-content .btn {
+  margin: 0 6px; /* if buttons are side by side */
+}
+
 
 
 .child-form-container .online-indicator.offline {
@@ -888,3 +927,73 @@ form textarea:focus {
   font-size: 1rem;
   margin-right: 6px;
 }
+/* Gender dropdown same size as other fields */
+/* Gender dropdown with black overlay */
+.form-entry .form-select {
+  background-color: rgba(0, 0, 0, 0.3) !important; /* black overlay */
+  border: 2px solid #444;                         
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  width: 100%;                                    /* full width */
+  color: #fff;                                    /* white text for contrast */
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+/* Focus effect */
+.form-entry .form-select:focus {
+  border-color: #00000025;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+}
+
+/* Dropdown options */
+.form-entry .form-select option {
+  background-color: #ffffff;    /* solid black dropdown list */
+  color: #000000;               /* white text */
+}
+.checkmark {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: block;
+  stroke-width: 2;
+  stroke: #009dff; 
+  stroke-miterlimit: 10;
+  margin: 0 auto 20px auto;
+  box-shadow: inset 0px 0px 0px #009dff;
+  animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+}
+
+.checkmark-circle {
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-width: 2;
+  stroke-miterlimit: 10;
+  stroke: #009dff;
+  fill: none;
+  animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.checkmark-check {
+  stroke: #fff;   /* white tick inside green circle */
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) .8s forwards;
+}
+
+@keyframes stroke {
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes scale {
+  0%, 100% { transform: none; }
+  50% { transform: scale3d(1.1, 1.1, 1); }
+}
+
+@keyframes fill {
+  100% { box-shadow: inset 0px 0px 0px 40px #009dff; }
+}
+

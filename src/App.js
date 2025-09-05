@@ -7,6 +7,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 import { syncUsers } from "./utils/indexeddb";
 import ChildForm from './frontend/ChildForm';   
+import ViewRecords from './frontend/ViewRecords';
+import AddRecordPage from './frontend/AddRecordPage';
 
 function App() {
   useEffect(() => {
@@ -32,6 +34,8 @@ function App() {
       <Route path="/signup" element={<SignUpForm />} />
       <Route path="/home" element={<Home />} />
       <Route path="/register" element={<ChildForm />} />
+      <Route path="/view-records" element={<ViewRecords />} /> 
+      <Route path="/add-record/:childId" element={<AddRecordPage />} />
     </Routes>
   );
 }

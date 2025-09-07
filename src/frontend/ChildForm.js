@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Form, Alert, Button } from "react-bootstrap";
-import { FaUpload, FaCamera, FaSave, FaChild, FaMapMarkerAlt, FaBars } from "react-icons/fa";
+import {
+  FaUpload,
+  FaCamera,
+  FaSave,
+  FaChild,
+  FaMapMarkerAlt,
+  FaBars,
+} from "react-icons/fa";
 import { MdFamilyRestroom } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 import "./ChildForm.css";
@@ -23,6 +30,8 @@ function ChildForm() {
   const [location, setLocation] = useState({ city: null, country: null });
   const [showAlert, setShowAlert] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showDuplicate, setShowDuplicate] = useState(false);
+
   const navigate = useNavigate();
 
   const [showCamera, setShowCamera] = useState(false);
@@ -71,7 +80,11 @@ function ChildForm() {
           );
           const data = await response.json();
           setLocation({
-            city: data.address.city || data.address.town || data.address.village || "Unknown",
+            city:
+              data.address.city ||
+              data.address.town ||
+              data.address.village ||
+              "Unknown",
             country: data.address.country || "Unknown",
           });
         } catch (err) {
@@ -136,43 +149,44 @@ function ChildForm() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!formData.consent) {
-    setShowAlert(true);
-    return;
-  }
-  setShowAlert(false);
+    e.preventDefault();
+    if (!formData.consent) {
+      setShowAlert(true);
+      return;
+    }
+    setShowAlert(false);
 
-  try {
-    const response = await fetch("/child", { // <-- replace with your cloud endpoint
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        child_id: formData.id,
-        name: formData.name,
-        dateOfBirth: formData.dob,
-        age: Number(formData.age || 0),
-        gender: formData.gender,
-        guardian: formData.guardian,
-        weight: Number(formData.weight || 0),
-        height: Number(formData.height || 0),
-        illnesses: formData.illnesses,
-        malnutrition: formData.malnutrition,
-        photo: formData.photo,
-        consent: formData.consent,
-        geo: { city: location.city, country: location.country },
-      }),
-    });
+    try {
+      const response = await fetch("http://localhost:5000/child", {
+        // <-- update to your deployed API later
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          child_id: formData.id, // ✅ matches schema
+          name: formData.name,
+          dateOfBirth: formData.dob, // ✅ was dob
+          age: Number(formData.age || 0),
+          gender: formData.gender,
+          guardian: formData.guardian,
+          weight: Number(formData.weight || 0),
+          height: Number(formData.height || 0),
+          illnesses: formData.illnesses,
+          malnutrition: formData.malnutrition,
+          photo: formData.photo, // ✅ base64 image
+          consent: formData.consent,
+          geo: { city: location.city, country: location.country },
+        }),
+      });
 
-    if (!response.ok) throw new Error("Failed to save record to cloud");
+      if (!response.ok) throw new Error("Failed to save record to cloud");
 
-    console.log("Saved to cloud:", formData);
-    setShowSuccess(true);
-  } catch (error) {
-    console.error("❌ Cloud Save Error:", error);
-    alert("Failed to save to cloud. Please try again.");
-  }
-};
+      console.log("Saved to cloud:", formData);
+      setShowSuccess(true);
+    } catch (error) {
+      console.error("❌ Cloud Save Error:", error);
+      setShowDuplicate(true); // show duplicate popup instead of alert
+    }
+  };
 
   const openCamera = async () => {
     setShowCamera(true);
@@ -207,36 +221,36 @@ function ChildForm() {
 
   const content = {
     en: {
-      home:"Home",
+      home: "Home",
       title: "GROWTH GUARDIAN",
       register: "Register a Child",
       update: "Update Registered Child",
       formTitle: "REGISTER A CHILD",
       consentWarning: "Parental consent is required to proceed.",
-      view:'View Child Record',
-      profile:'Your Profile',
-      uid:"Unique ID",
-      online:"Online",
-      offline:"Offline",
-      uphoto:"Upload Photo",
-      cphoto:"Capture Photo",
-      retake:"Retake Photo",
-      cancel:"Cancel",
-      take:"Take Photo",
-      slgen:"Select Gender",
-      m:"Male",
-      f:"Female",
-      o:"Other",
-      srec:"Save Record",
-      y:"Yes",
-      n:"No",
-      logout:'Log Out',
-      ss:"Saved Successfully!",
-      close:"Close",
+      view: "View Child Record",
+      profile: "Your Profile",
+      uid: "Unique ID",
+      online: "Online",
+      offline: "Offline",
+      uphoto: "Upload Photo",
+      cphoto: "Capture Photo",
+      retake: "Retake Photo",
+      cancel: "Cancel",
+      take: "Take Photo",
+      slgen: "Select Gender",
+      m: "Male",
+      f: "Female",
+      o: "Other",
+      srec: "Save Record",
+      y: "Yes",
+      n: "No",
+      logout: "Log Out",
+      ss: "Saved Successfully!",
+      close: "Close",
       labels: {
         name: "Child's Name",
         photo: "Face Photo (Capture or Upload)",
-        uid:"Unique ID",
+        uid: "Unique ID",
         dob: "Date of Birth",
         age: "Age",
         weight: "Weight (kg)",
@@ -250,36 +264,36 @@ function ChildForm() {
       },
     },
     hi: {
-      home:"होम",
+      home: "होम",
       title: "विकास संरक्षक",
       register: "नया बच्चा पंजीकृत करें",
       update: "पंजीकृत बच्चे को अपडेट करें",
       formTitle: "नया बाल डेटा संग्रह फ़ॉर्म",
       consentWarning: "जारी रखने के लिए अभिभावक की सहमति आवश्यक है।",
-      view:'बच्चों के रिकॉर्ड देखें',
-      profile:'अपनी प्रोफ़ाइल देखें',
-      uid:"विशिष्ट पहचान",
-      online:"ऑनलाइन",
-      offline:"ऑफलाइन",
-      uphoto:"फोटो अपलोड करें",
-      cphoto:"फोटो खींचो",
-      retake:"फ़ोटो दोबारा लें",
-      cancel:"बंद करें",
-      take:"फोटो खिचिये",
-      slgen:"लिंग चुनें",
-      m:"पुरुष",
-      f:"महिला",
-      o:"अन्य",
-      srec:"रिकॉर्ड सेव कर्रे",
-      y:"हाँ",
-      n:"नहीं",
-      logout:'लॉग आउट',
-      ss:"सफलतापूर्वक सेव!",
-      close:"बंद करें",
+      view: "बच्चों के रिकॉर्ड देखें",
+      profile: "अपनी प्रोफ़ाइल देखें",
+      uid: "विशिष्ट पहचान",
+      online: "ऑनलाइन",
+      offline: "ऑफलाइन",
+      uphoto: "फोटो अपलोड करें",
+      cphoto: "फोटो खींचो",
+      retake: "फ़ोटो दोबारा लें",
+      cancel: "बंद करें",
+      take: "फोटो खिचिये",
+      slgen: "लिंग चुनें",
+      m: "पुरुष",
+      f: "महिला",
+      o: "अन्य",
+      srec: "रिकॉर्ड सेव कर्रे",
+      y: "हाँ",
+      n: "नहीं",
+      logout: "लॉग आउट",
+      ss: "सफलतापूर्वक सेव!",
+      close: "बंद करें",
       labels: {
         name: "बच्चे का नाम",
         photo: "चेहरे की फोटो (कैप्चर या अपलोड करें)",
-        uid:"विशिष्ट पहचान",
+        uid: "विशिष्ट पहचान",
         dob: "जन्म तिथि",
         age: "आयु",
         weight: "वजन (किग्रा)",
@@ -288,7 +302,8 @@ function ChildForm() {
         guardian: "अभिभावक का नाम",
         malnutrition: "कुपोषण के लक्षण",
         illnesses: "हाल की बीमारियाँ",
-        consent: "मैं पुष्टि करता हूँ कि मुझे यह डेटा एकत्र करने के लिए अभिभावक की सहमति प्राप्त है।",
+        consent:
+          "मैं पुष्टि करता हूँ कि मुझे यह डेटा एकत्र करने के लिए अभिभावक की सहमति प्राप्त है।",
         placeholder: "'N/A' या 'Skip' लिखें यदि लागू नहीं",
       },
     },
@@ -320,13 +335,40 @@ function ChildForm() {
 
       <div ref={sidebarRef} className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <ul className="sidebar-links">
-          <li onClick={() => { navigate("/home"); setSidebarOpen(false); }}>{content[language].home}</li>
-          <li onClick={() => { navigate("/register"); setSidebarOpen(false); }}>{content[language].register}</li>
-          <li onClick={() => navigate('/add-record/:childId')}>{content[language].update}</li>
-          <li onClick={() => { navigate("/view-records"); setSidebarOpen(false); }}>{content[language].view}</li>
-          <li onClick={() => setSidebarOpen(false)}>{content[language].profile}</li>
+          <li
+            onClick={() => {
+              navigate("/home");
+              setSidebarOpen(false);
+            }}
+          >
+            {content[language].home}
+          </li>
+          <li
+            onClick={() => {
+              navigate("/register");
+              setSidebarOpen(false);
+            }}
+          >
+            {content[language].register}
+          </li>
+          <li onClick={() => navigate("/add-record/:childId")}>
+            {content[language].update}
+          </li>
+          <li
+            onClick={() => {
+              navigate("/view-records");
+              setSidebarOpen(false);
+            }}
+          >
+            {content[language].view}
+          </li>
+          <li onClick={() => setSidebarOpen(false)}>
+            {content[language].profile}
+          </li>
         </ul>
-        <button className="logout-button" onClick={() => setSidebarOpen(false)}>{content[language].logout}</button>
+        <button className="logout-button" onClick={() => setSidebarOpen(false)}>
+          {content[language].logout}
+        </button>
       </div>
 
       <div className="top-left-brand">
@@ -337,60 +379,154 @@ function ChildForm() {
 
       <div className="top-bar">
         <div className="language-card">
-          <button className={`lang-btn ${language === "en" ? "active" : ""}`} onClick={() => setLanguage("en")}>English</button>
-          <button className={`lang-btn ${language === "hi" ? "active" : ""}`} onClick={() => setLanguage("hi")}>हिन्दी</button>
+          <button
+            className={`lang-btn ${language === "en" ? "active" : ""}`}
+            onClick={() => setLanguage("en")}
+          >
+            English
+          </button>
+          <button
+            className={`lang-btn ${language === "hi" ? "active" : ""}`}
+            onClick={() => setLanguage("hi")}
+          >
+            हिन्दी
+          </button>
         </div>
       </div>
 
       <div className="child-form-container glass-card hover-card fade-in-card">
-        <div className="child-form-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-          <h2 style={{ display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
+        <div
+          className="child-form-header"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "1rem",
+          }}
+        >
+          <h2
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              margin: 0,
+            }}
+          >
             <FaChild className="title-icon" /> {content[language].formTitle}
           </h2>
-          <div className={`online-indicator ${isOnline ? "online" : "offline"}`} style={{ fontSize: "0.9rem", padding: "4px 12px", borderRadius: "8px" }}>
+          <div
+            className={`online-indicator ${isOnline ? "online" : "offline"}`}
+            style={{
+              fontSize: "0.9rem",
+              padding: "4px 12px",
+              borderRadius: "8px",
+            }}
+          >
             {isOnline ? content[language].online : content[language].offline}
           </div>
         </div>
 
         {location.city && location.country && (
-          <div className="offline-location" style={{ fontSize: "0.9rem", color: "#fff", display: "flex", alignItems: "center", gap: "4px" }}>
-            <FaMapMarkerAlt /> <em>{location.city}, {location.country}</em>
+          <div
+            className="offline-location"
+            style={{
+              fontSize: "0.9rem",
+              color: "#fff",
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+            }}
+          >
+            <FaMapMarkerAlt />{" "}
+            <em>
+              {location.city}, {location.country}
+            </em>
           </div>
         )}
 
-        {showAlert && <Alert variant="danger">{content[language].consentWarning}</Alert>}
+        {showAlert && (
+          <Alert variant="danger">{content[language].consentWarning}</Alert>
+        )}
 
         <Form onSubmit={handleSubmit}>
           {fields.map(({ key, type, required, readOnly }) => (
             <Form.Group controlId={key} className="form-entry" key={key}>
               <Form.Label>{content[language].labels[key]}</Form.Label>
               {type === "textarea" ? (
-                <Form.Control as="textarea" rows={2} name={key} value={formData[key]} onChange={handleChange} placeholder={content[language].labels.placeholder} />
+                <Form.Control
+                  as="textarea"
+                  rows={2}
+                  name={key}
+                  value={formData[key]}
+                  onChange={handleChange}
+                  placeholder={content[language].labels.placeholder}
+                />
               ) : (
-                <Form.Control type={type} name={key} value={formData[key]} onChange={handleChange} required={required} readOnly={readOnly} />
+                <Form.Control
+                  type={type}
+                  name={key}
+                  value={formData[key]}
+                  onChange={handleChange}
+                  required={required}
+                  readOnly={readOnly}
+                />
               )}
 
               {key === "name" && (
                 <>
                   <Form.Group controlId="uniqueId" className="form-entry mt-2">
                     <Form.Label>{content[language].uid}</Form.Label>
-                    <Form.Control type="text" name="id" value={formData.id} readOnly />
+                    <Form.Control
+                      type="text"
+                      name="id"
+                      value={formData.id}
+                      readOnly
+                    />
                   </Form.Group>
 
                   <div className="photo-button-row mt-2">
                     <label htmlFor="choose-photo" className="btn-purple">
-                      <FaUpload className="photo-icon" /> {content[language].uphoto}
+                      <FaUpload className="photo-icon" />{" "}
+                      {content[language].uphoto}
                     </label>
-                    <input type="file" id="choose-photo" name="photo" accept="image/*" onChange={handleChange} style={{ display: "none" }} />
-                    <button type="button" className="btn-blue" onClick={openCamera}>
-                      <FaCamera className="photo-icon" /> {content[language].cphoto}
+                    <input
+                      type="file"
+                      id="choose-photo"
+                      name="photo"
+                      accept="image/*"
+                      onChange={handleChange}
+                      style={{ display: "none" }}
+                    />
+                    <button
+                      type="button"
+                      className="btn-blue"
+                      onClick={openCamera}
+                    >
+                      <FaCamera className="photo-icon" />{" "}
+                      {content[language].cphoto}
                     </button>
                   </div>
                   {formData.photo && (
                     <div className="photo-preview mt-3">
-                      <img src={formData.photo} alt="Child" style={{ width: "200px", height: "200px", borderRadius: "8px", objectFit: "cover" }} />
+                      <img
+                        src={formData.photo}
+                        alt="Child"
+                        style={{
+                          width: "200px",
+                          height: "200px",
+                          borderRadius: "8px",
+                          objectFit: "cover",
+                        }}
+                      />
                       {photoCaptured && (
-                        <button type="button" className="btn-retake mt-2" onClick={() => { setShowCamera(true); setPhotoCaptured(false); }}>
+                        <button
+                          type="button"
+                          className="btn-retake mt-2"
+                          onClick={() => {
+                            setShowCamera(true);
+                            setPhotoCaptured(false);
+                          }}
+                        >
                           {content[language].retake}
                         </button>
                       )}
@@ -403,7 +539,12 @@ function ChildForm() {
               {key === "age" && (
                 <Form.Group controlId="gender" className="form-entry mt-2">
                   <Form.Label>{content[language].labels.gender}</Form.Label>
-                  <Form.Select name="gender" value={formData.gender} onChange={handleChange} required>
+                  <Form.Select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    required
+                  >
                     <option value="">{content[language].slgen}</option>
                     <option value="Male">{content[language].m}</option>
                     <option value="Female">{content[language].f}</option>
@@ -418,21 +559,49 @@ function ChildForm() {
           <Form.Group controlId="malnutrition" className="form-entry">
             <Form.Label>{content[language].labels.malnutrition}</Form.Label>
             <div className="toggle-group">
-              <input type="radio" id="malnutrition-yes" name="malnutrition" value="yes" checked={formData.malnutrition.hasSigns === "yes"} onChange={handleChange} />
+              <input
+                type="radio"
+                id="malnutrition-yes"
+                name="malnutrition"
+                value="yes"
+                checked={formData.malnutrition.hasSigns === "yes"}
+                onChange={handleChange}
+              />
               <label htmlFor="malnutrition-yes">{content[language].y}</label>
 
-              <input type="radio" id="malnutrition-no" name="malnutrition" value="no" checked={formData.malnutrition.hasSigns === "no"} onChange={handleChange} />
+              <input
+                type="radio"
+                id="malnutrition-no"
+                name="malnutrition"
+                value="no"
+                checked={formData.malnutrition.hasSigns === "no"}
+                onChange={handleChange}
+              />
               <label htmlFor="malnutrition-no">{content[language].n}</label>
             </div>
             {formData.malnutrition.hasSigns === "yes" && (
-              <Form.Control as="textarea" rows={2} name="malnutritionDetails" value={formData.malnutrition.details} onChange={handleChange} placeholder={content[language].labels.placeholder} className="mt-2" />
+              <Form.Control
+                as="textarea"
+                rows={2}
+                name="malnutritionDetails"
+                value={formData.malnutrition.details}
+                onChange={handleChange}
+                placeholder={content[language].labels.placeholder}
+                className="mt-2"
+              />
             )}
           </Form.Group>
 
           {/* Consent */}
           <Form.Group controlId="consent" className="consent-line form-entry">
             <label className="custom-checkbox">
-              <input type="checkbox" name="consent" checked={formData.consent} onChange={handleChange} required />
+              <input
+                type="checkbox"
+                name="consent"
+                checked={formData.consent}
+                onChange={handleChange}
+                required
+              />
               <span className="checkbox-box"></span>
               {content[language].labels.consent}
             </label>
@@ -452,8 +621,19 @@ function ChildForm() {
           <div className="camera-content">
             <video ref={videoRef} autoPlay></video>
             <div className="camera-buttons">
-              <Button type="button" className="btn-blue" onClick={capturePhoto}>{content[language].take}</Button>
-              <Button type="button" className="btn-red" onClick={() => { stopCamera(); setShowCamera(false); }}>{content[language].cancel}</Button>
+              <Button type="button" className="btn-blue" onClick={capturePhoto}>
+                {content[language].take}
+              </Button>
+              <Button
+                type="button"
+                className="btn-red"
+                onClick={() => {
+                  stopCamera();
+                  setShowCamera(false);
+                }}
+              >
+                {content[language].cancel}
+              </Button>
             </div>
           </div>
         </div>
@@ -463,15 +643,72 @@ function ChildForm() {
       {showSuccess && (
         <div className="success-popup">
           <div className="success-content">
-            <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-              <circle className="checkmark-circle" cx="26" cy="26" r="25" fill="none" />
-              <path className="checkmark-check" fill="none" d="M14 27 L 22 35 L 38 19" />
+            <svg
+              className="checkmark"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 52 52"
+            >
+              <circle
+                className="checkmark-circle"
+                cx="26"
+                cy="26"
+                r="25"
+                fill="none"
+              />
+              <path
+                className="checkmark-check"
+                fill="none"
+                d="M14 27 L 22 35 L 38 19"
+              />
             </svg>
             <h3>{content[language].ss}</h3>
 
             <div className="popup-buttons mt-3">
-              <button className="btn-blue" onClick={() => { setShowSuccess(false); navigate("/view-records"); }}>{content[language].view}</button>
-              <button className="btn-red" onClick={() => setShowSuccess(false)}>{content[language].close}</button>
+              <button
+                className="btn-blue"
+                onClick={() => {
+                  setShowSuccess(false);
+                  navigate("/view-records");
+                }}
+              >
+                {content[language].view}
+              </button>
+              <button className="btn-red" onClick={() => setShowSuccess(false)}>
+                {content[language].close}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Duplicate Error Popup */}
+      {showDuplicate && (
+        <div className="error-popup">
+          <div className="error-content">
+            <svg
+              className="error-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 52 52"
+            >
+              <circle
+                className="error-circle"
+                cx="26"
+                cy="26"
+                r="25"
+                fill="none"
+              />
+              <line className="error-line" x1="16" y1="16" x2="36" y2="36" />
+              <line className="error-line" x1="36" y1="16" x2="16" y2="36" />
+            </svg>
+            <h3>Form already saved</h3>
+            <p>Please refresh the page and try again.</p>
+
+            <div className="popup-buttons mt-3">
+              <button
+                className="btn-red"
+                onClick={() => setShowDuplicate(false)}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

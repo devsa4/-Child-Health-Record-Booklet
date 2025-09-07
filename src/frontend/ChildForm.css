@@ -997,3 +997,66 @@ form textarea:focus {
   100% { box-shadow: inset 0px 0px 0px 40px #009dff; }
 }
 
+/* Popup overlay */
+.error-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1200;
+}
+
+/* Popup box */
+.error-content {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 16px;
+  text-align: center;
+  width: 320px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  animation: popIn 0.3s ease-in-out;
+}
+
+/* Error icon */
+.error-icon {
+  width: 60px;
+  height: 60px;
+  stroke: #e74c3c;
+  stroke-width: 4;
+  margin-bottom: 1rem;
+}
+
+.error-circle {
+  stroke: #e74c3c;
+  stroke-width: 3;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  animation: dashCircle 0.6s ease forwards;
+}
+
+.error-line {
+  stroke: #e74c3c;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: dashLine 0.4s ease forwards;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.7); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes dashCircle {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes dashLine {
+  to { stroke-dashoffset: 0; }
+}

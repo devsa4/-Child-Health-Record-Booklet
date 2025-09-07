@@ -13,7 +13,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type']
 }));
 
-app.use(express.json());
+// ✅ Increase JSON payload limit (important for Base64 photos)
+app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ limit: "2mb", extended: true }));
 
 // ✅ Connect to MongoDB Atlas
 mongoose.connect(process.env.MONGO_URI)
@@ -111,7 +113,7 @@ const childSchema = new mongoose.Schema({
       date: Date
     }
   ],
-  photo: { type: String },
+  photo: { type: String }, // Base64 photo
   consent: { type: Boolean, required: true },
   geo: { city: String, country: String },
   createdAt: { type: Date, default: Date.now }

@@ -1,7 +1,3 @@
-/*
- * Consolidated and Cleaned CSS for Child Summary Modal
- */
-
 /* Modal Backdrop */
 .modal-overlay {
   position: fixed;
@@ -12,52 +8,37 @@
   background: rgba(0,0,0,0.5);
   display: flex;
   justify-content: center;
-  align-items: center; /* center the modal vertically */
+  align-items: center;
   padding: 0;
-  overflow: hidden; /* remove any scrolling */
+  overflow-y: auto;   /* vertical scroll if needed */
+  overflow-x: hidden; /* prevent horizontal scroll */
   z-index: 1000;
-  overflow-y: scroll; /* still scrollable */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE 10+ */
-}
-.modal-overlay::-webkit-scrollbar {
-  width: 0px; /* Chrome, Safari, Opera */
-}
-/* Hide scrollbar but keep scrolling */
-body {
-  overflow-y: scroll; /* still scrollable */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE 10+ */
-}
-
-body::-webkit-scrollbar {
-  width: 0px; /* Chrome, Safari, Opera */
-  background: transparent; /* optional: just in case */
 }
 
 /* Modal card itself */
 .modal-content {
-  background: #fff;
-  border-radius: 16px; /* Rounded corners */
+  background: #fff; /* full white background */
+  border-radius: 16px;
   padding: 20px;
   max-width: 500px;
   width: 90%;
+  max-height: 90vh; /* fit screen height */
+  overflow-y: auto;  /* allow vertical scroll */
+  overflow-x: hidden; /* prevent horizontal scroll */
   box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-  overflow: visible; /* no internal scroll */
-  max-height: 90vh; /* optional: fit within screen */
+  box-sizing: border-box;
 }
 
-/* Optional: smooth fade-in */
+/* Smooth fade-in */
 .animate-popup {
   animation: fadeIn 0.3s ease-in-out;
 }
-
 @keyframes fadeIn {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
 
-
+/* Modal Buttons Top */
 .modal-buttons-top {
   display: flex;
   justify-content: space-between;
@@ -70,12 +51,8 @@ body::-webkit-scrollbar {
   font-size: 1.5rem;
   cursor: pointer;
   color: #6B7280;
-  transition: color 0.2s ease;
 }
-
-.modal-close:hover {
-  color: #4B5563;
-}
+.modal-close:hover { color: #4B5563; }
 
 .modal-download-btn {
   background-color: #3B82F6;
@@ -85,22 +62,13 @@ body::-webkit-scrollbar {
   font-size: 1.1rem;
   padding: 8px 12px;
   border-radius: 5px;
-  transition: background-color 0.2s ease-in-out;
   display: flex;
   align-items: center;
 }
-
-.modal-download-btn:hover {
-  background-color: #1E40AF;
-}
+.modal-download-btn:hover { background-color: #1E40AF; }
 
 /* Child Photo */
-.child-photo-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1.5rem;
-}
-
+.child-photo-wrapper { display: flex; justify-content: center; margin-bottom: 1.5rem; }
 .child-photo {
   width: 120px;
   height: 120px;
@@ -108,197 +76,44 @@ body::-webkit-scrollbar {
   border-radius: 50%;
   border: 3px solid #3B82F6;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  animation: spinOnce 0.8s ease-out forwards;
+  max-width: 100%;
+  box-sizing: border-box;
 }
-
-.no-photo {
-  text-align: center;
-  color: gray;
-  font-style: italic;
-  margin-bottom: 1rem;
-}
+@keyframes spinOnce { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 /* Graph Section */
 .graph-wrapper {
   margin-top: 1rem;
   padding: 1rem;
-  background: #f9fafb;
+  background: #fff; /* full white behind chart */
   border-radius: 0.75rem;
   text-align: left;
+  width: 100%;
+  box-sizing: border-box;
 }
+.graph-wrapper h3 { margin-bottom: 0.5rem; color: #111; font-size: 1.25rem; }
+.graph-wrapper canvas { width: 100% !important; height: 450px !important; }
 
-.graph-wrapper h3 {
-  margin-bottom: 0.5rem;
-  color: #111;
-  font-size: 1.25rem;
-}
-
-.graph-note {
-  margin-top: 0.5rem;
-  font-size: 0.9rem;
-  font-style: italic;
-  color: #555;
-}
-
-/* Modal Action Buttons (Delete & Update) */
+/* Modal Action Buttons */
 .modal-actions {
   margin-top: 20px;
   display: flex;
   justify-content: center;
   gap: 15px;
 }
-
-.delete-button,
-.update-button {
-  border: none;
-  padding: 0.6rem 1rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: bold;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  transition: all 0.2s ease;
-}
-
 .delete-button {
   background: #e11d48;
   color: white;
-  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
   box-shadow: 0 4px 6px rgba(225, 29, 72, 0.3);
 }
-
-.delete-button:hover {
-  background: #b91c1c;
-  box-shadow: 0 6px 10px rgba(185, 28, 28, 0.4);
-}
-
-.add-button {
-  background-color: #3B82F6 !important; /* Solid blue */
-  color: rgb(0, 0, 0) !important;              /* White text */
-  border: none !important;              /* No border */
-  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
-}
-
-.add-button:hover {
-  background-color: #1E40AF !important; /* Darker blue on hover */
-  color: rgb(0, 0, 0) !important;
-  box-shadow: 0 6px 10px rgba(30, 64, 175, 0.4);
-}
-
-/* Animation Keyframes */
-@keyframes popupIn {
-  from {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-/* Spin Animation */
-@keyframes spinOnce {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Apply animation when modal opens */
-.child-photo {
-  animation: spinOnce 0.8s ease-out forwards; /* Spin once over 0.8s */
-}
-/* Overlay for all modals */
-.unique-id-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.5); /* dimmed background */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-}
-
-/* White success popup */
-.success-id-modal-content {
-  background: #ffffff !important;
-  padding: 2rem !important;
-  border-radius: 20px !important;
-  width: 350px !important;
-  max-width: 90% !important;
-  text-align: center !important;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.25) !important;
-}
-
-/* Success title */
-.success-id-modal-content h2 {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #2e7d32; /* success green */
-  margin-bottom: 1.5rem;
-}
-
-/* Close button */
-
-/* Common popup card style */
-.popup-card {
-  background: #fff;
-  padding: 10px 14px;       /* smaller padding */
-  border-radius: 10px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  width: 220px;            /* keep narrow */
-  min-height: 80px;        /* shorter height */
-  text-align: center;
-  margin: auto;
-  color: black;
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-.popup-card h2 {
-  font-size: 1rem;         /* smaller title */
-  margin-bottom: 8px;      /* less space below */
-  line-height: 1.2; 
-   color: black;        /* tighter lines */
-}
-
-.delete-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 8px;         /* less gap */
-}
-
-.delete-buttons button {
-  padding: 4px 10px;       /* smaller buttons */
-  font-size: 0.85rem;
-}
-
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-
-
-
-
-.delete-buttons button:first-child {
-  background: #e74c3c; /* red Yes */
-  color: white;
-}
-
-.delete-buttons button:last-child {
-  background: #bdc3c7; /* gray No */
-  color: black;
-}
+.delete-button:hover { background: #b91c1c; box-shadow: 0 6px 10px rgba(185, 28, 28, 0.4); }
 .update-card-btn {
-  background-color: #007bff;   /* Blue */
+  background-color: #007bff;
   color: #fff;
   border: none;
   padding: 8px 14px;
@@ -308,56 +123,85 @@ body::-webkit-scrollbar {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-  transition: background 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+.update-card-btn:hover { background-color: #0056b3; transform: translateY(-2px); }
+
+/* Popups & Modals */
+.unique-id-modal-overlay, .invalid-id-modal-content, .popup-card {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
 }
 
-.update-card-btn:hover {
-  background-color: #0056b3;  /* Darker blue */
-  transform: translateY(-2px);
-}
-.invalid-id-modal-content {
-  background-color: #fff; /* white card */
-  padding: 20px 25px;
-  border-radius: 10px;
-  width: 280px; /* small width */
-  max-width: 90%;
-  text-align: center;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-  position: relative;
+/* Delete Confirm Popup - average size */
+/* Delete Confirm Popup */
+.popup-card {
+  background: #fff;
+  padding: 20px 25px;           /* moderate padding */
+  border-radius: 12px;          /* rounded corners */
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  text-align: center;           /* center the text */
+  display: flex;
+  flex-direction: column;       /* stack h2 and buttons vertically */
+  align-items: center;          /* center horizontally */
+  gap: 16px;                    /* space between text and buttons */
+  max-width: 300px;
+  width: 90%;
+  margin: auto;
 }
 
-.invalid-id-modal-content h2 {
-  font-size: 1rem;
-  margin-bottom: 15px;
+.popup-card h2 {
+  font-size: 1rem;              /* readable size */
   color: #333;
+  line-height: 1.4;
 }
 
+.delete-buttons {
+  display: flex;
+  justify-content: center;      /* buttons centered horizontally */
+  gap: 12px;                    /* space between Yes & No buttons */
+  width: 100%;
+}
+
+.delete-buttons button {
+  padding: 6px 14px;            /* moderate button size */
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: none;
+  flex: 1;                      /* make buttons equal width */
+}
+
+.delete-buttons button:first-child {
+  background: #e74c3c;          /* red for Yes */
+  color: white;
+}
+
+.delete-buttons button:last-child {
+  background: #2473a7;          /* gray for No */
+  color: black;
+}
+
+/* Invalid ID Popup */
+.invalid-id-modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  text-align: center;
+  width: 280px;
+  max-width: 90%;
+}
+.invalid-id-modal-content h2 { font-size: 1rem; margin-bottom: 15px; color: #333; }
 .invalid-id-modal-content button {
-  background-color: #007bff; /* blue button */
+  background-color: #007bff;
   color: #fff;
   border: none;
   padding: 8px 14px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.9rem;
-  transition: background 0.2s ease, transform 0.2s ease;
 }
-
-.invalid-id-modal-content button:hover {
-  background-color: #0056b3; /* darker blue */
-  transform: translateY(-2px);
-}
-
-.unique-id-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.45); /* semi-transparent overlay */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
+.invalid-id-modal-content button:hover { background-color: #0056b3; transform: translateY(-2px); }

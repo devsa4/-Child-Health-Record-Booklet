@@ -123,8 +123,10 @@
 
 .chroma-info .role,
 .chroma-info .handle {
-  color: #000000;
+  color: #ffffff; /* ya koi light color jo background par visible ho */
+  font-size: 0.9rem; /* optional, readability ke liye */
 }
+
 
 /* Overlay for depth/grayscale effect */
 .chroma-overlay {
@@ -223,4 +225,3 @@ canvas {
   transform: scale(1.15);
   opacity: 0.85;
 }
-

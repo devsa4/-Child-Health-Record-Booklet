@@ -12,6 +12,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler
 } from "chart.js";
 import "./ChildSummaryModal.css";
 
@@ -22,7 +23,8 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 function ChildSummaryModal({ child, onClose, onDelete, language }) {
@@ -31,7 +33,7 @@ function ChildSummaryModal({ child, onClose, onDelete, language }) {
   const [uniqueIdInput, setUniqueIdInput] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showInvalidIdPopup, setShowInvalidIdPopup] = useState(false);
-  const [ setShowDeleteSuccess] = useState(false);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -101,45 +103,68 @@ function ChildSummaryModal({ child, onClose, onDelete, language }) {
 
   const currentContent = content[language];
 
-  const handleDownloadClick = () => {
-    setShowUniqueIdPopup(true);
-  };
+  const handleDownloadClick = () => setShowUniqueIdPopup(true);
 
   const handleUniqueIdSubmit = (e) => {
-    e.preventDefault();
-    if (uniqueIdInput === child.id) {
-      const modalContent = document.getElementById('modal-content-to-print');
-      html2pdf().from(modalContent).set({
-        margin: 1,
-        filename: `${child.name}_Record.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-      }).save();
-      setShowUniqueIdPopup(false);
-      setUniqueIdInput("");
-    } else {
-      setShowInvalidIdPopup(true);
+  e.preventDefault();
+  const childIdKey = child.child_id || child._id || child.id;
+
+  if (uniqueIdInput === String(childIdKey)) {
+    const modalContent = document.getElementById('modal-content-to-print');
+
+    // Apply temporary styles for PDF
+    const originalBackground = modalContent.style.backgroundColor;
+    modalContent.style.backgroundColor = "#fff"; // Ensure white background
+    modalContent.style.width = "100%";
+    modalContent.style.maxWidth = "800px"; // optional for wider graph
+    modalContent.style.padding = "20px";
+
+    setTimeout(() => {
+      html2pdf()
+        .from(modalContent)
+        .set({
+          margin: 0.5,
+          filename: `${child.name}_Record.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 3, logging: true, useCORS: true },
+          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        })
+        .save()
+        .then(() => {
+          // Reset temporary styles
+          modalContent.style.backgroundColor = originalBackground;
+        });
+    }, 300);
+
+    setShowUniqueIdPopup(false);
+    setUniqueIdInput("");
+  } else {
+    setShowInvalidIdPopup(true);
+  }
+};
+
+  const handleAddRecordClick = () => navigate(`/add-record/${child.id || child._id || child.child_id}`);
+
+  const handleDeleteClick = () => setShowDeleteConfirm(true);
+
+  const confirmDelete = async () => {
+    try {
+      const childIdKey = child?.child_id || child?._id || child?.id;
+      if (!childIdKey) { alert("❌ Child ID not found!"); return; }
+
+      const res = await fetch(`/child/${childIdKey}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("❌ Failed to delete record from cloud");
+
+      onDelete(childIdKey);
+      setShowDeleteConfirm(false);
+      setShowDeleteSuccess(true);
+    } catch (err) {
+      console.error("🔴 Delete error:", err);
+      alert("Error deleting record from cloud");
     }
   };
 
-  const handleAddRecordClick = () => {
-    navigate(`/add-record/${child.id}`);
-  };
-
-  const handleDeleteClick = () => {
-    setShowDeleteConfirm(true);
-  };
-
-  const confirmDelete = () => {
-    onDelete(child.id);
-    setShowDeleteConfirm(false);
-    setShowDeleteSuccess(true);
-  };
-
-  const cancelDelete = () => {
-    setShowDeleteConfirm(false);
-  };
+  const cancelDelete = () => setShowDeleteConfirm(false);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -157,7 +182,13 @@ function ChildSummaryModal({ child, onClose, onDelete, language }) {
           </div>
         )}
 
-        <h2>{child.name}</h2>
+        <h2>
+          {child.name}
+          <span style={{ fontSize: "0.8em", color: "#888", marginLeft: "8px" }}>
+            ({child.child_id || child._id || child.id})
+          </span>
+        </h2>
+
         <p><strong>Age:</strong> {child.age} years</p>
         <p><strong>Gender:</strong> {child.gender}</p>
         <p><strong>Weight:</strong> {child.weight} kg</p>
@@ -166,16 +197,20 @@ function ChildSummaryModal({ child, onClose, onDelete, language }) {
         <p><strong>Signs of Malnutrition:</strong> {child.malnutrition?.hasSigns === "yes" ? child.malnutrition.details : "No"}</p>
 
         <h3>Weight Progress</h3>
-        <Line data={weightData} />
+        <div className="graph-wrapper">
+          <Line data={weightData} height={300} options={{ maintainAspectRatio: false }} />
+        </div>
+
         <h3>Height Progress</h3>
-        <Line data={heightData} />
+        <div className="graph-wrapper">
+          <Line data={heightData} height={300} options={{ maintainAspectRatio: false }} />
+        </div>
 
         <div className="modal-actions">
           <button className="delete-button" onClick={handleDeleteClick}>{currentContent.delete}</button>
-         <button className="update-card-btn" onClick={handleAddRecordClick}>
-  <FaEdit style={{ marginRight: "6px" }} /> {currentContent.update}
-</button>
-
+          <button className="update-card-btn" onClick={handleAddRecordClick}>
+            <FaEdit style={{ marginRight: "6px" }} /> {currentContent.update}
+          </button>
         </div>
 
         {/* Unique ID Popup */}
@@ -193,9 +228,7 @@ function ChildSummaryModal({ child, onClose, onDelete, language }) {
                   placeholder="Unique ID"
                   required
                 />
-                <button type="submit" className="unique-id-modal-submit">
-                  {currentContent.download}
-                </button>
+                <button type="submit" className="unique-id-modal-submit">{currentContent.download}</button>
               </form>
             </div>
           </div>
@@ -211,8 +244,9 @@ function ChildSummaryModal({ child, onClose, onDelete, language }) {
           </div>
         )}
 
-        {/* Delete Success Popup */}
-        {showDeleteConfirm && (
+        {/* Delete Confirm Popup */}
+        {/* Delete Confirm Popup */}
+{showDeleteConfirm && (
   <div className="unique-id-modal-overlay" onClick={cancelDelete}>
     <div className="popup-card" onClick={(e) => e.stopPropagation()}>
       <h2>{currentContent.confirmDelete}</h2>
@@ -223,6 +257,7 @@ function ChildSummaryModal({ child, onClose, onDelete, language }) {
     </div>
   </div>
 )}
+
       </div>
     </div>
   );

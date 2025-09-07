@@ -18,15 +18,22 @@ function ViewRecords() {
   const sidebarRef = useRef();
   const navigate = useNavigate();
 
-  // Load saved records from localStorage
+  // ✅ Fetch records only from cloud
   useEffect(() => {
-    try {
-      const savedRecords = JSON.parse(localStorage.getItem("childRecords")) || [];
-      setRecords(savedRecords);
-      setFilteredRecords(savedRecords);
-    } catch (err) {
-      console.error("Error loading records:", err);
+    async function fetchRecords() {
+      try {
+        const res = await fetch("/children"); // Backend endpoint connected to MongoDB Atlas
+        if (!res.ok) throw new Error("Failed to fetch records from cloud");
+        const data = await res.json();
+        setRecords(data);
+        setFilteredRecords(data);
+      } catch (err) {
+        console.error("Cloud Fetch Error:", err);
+        setRecords([]);
+        setFilteredRecords([]);
+      }
     }
+    fetchRecords();
   }, []);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -41,23 +48,53 @@ function ViewRecords() {
     setShowModal(false);
   };
 
-  const handleDeleteChild = (childId) => {
-    const updatedRecords = records.filter((r) => r.id !== childId);
-    setRecords(updatedRecords);
-    setFilteredRecords(updatedRecords);
-    localStorage.setItem("childRecords", JSON.stringify(updatedRecords));
-    closeModal();
+  // Delete child directly in cloud
+  // Delete child directly in cloud
+const handleDeleteChild = async (childId) => {
+  try {
+    const res = await fetch(`/child/${childId}`, { method: "DELETE" });
+    const data = await res.json();
+
+    if (res.ok) {
+      console.log(`✅ Deleted child: ${childId}`);
+      const updatedRecords = records.filter(r => r.child_id !== childId && r._id !== childId && r.id !== childId);
+      setRecords(updatedRecords);
+      setFilteredRecords(updatedRecords);
+      closeModal();
+    } else {
+      // ignore not found errors
+      console.log(`ℹ️ ${data.message || "Child not found, ignoring."}`);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Error deleting record from cloud");
+  }
+};
+
+
+
+  // Update child directly in cloud
+  const handleUpdateChild = async (updatedChild) => {
+    try {
+      const res = await fetch(`/child/${updatedChild.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedChild),
+      });
+      if (!res.ok) throw new Error("Failed to update record in cloud");
+
+      const updatedRecords = records.map((r) =>
+        r.id === updatedChild.id || r._id === updatedChild.id ? updatedChild : r
+      );
+      setRecords(updatedRecords);
+      setFilteredRecords(updatedRecords);
+    } catch (err) {
+      console.error(err);
+      alert("Error updating record in cloud");
+    }
   };
 
-  const handleUpdateChild = (updatedChild) => {
-    const updatedRecords = records.map((r) =>
-      r.id === updatedChild.id ? updatedChild : r
-    );
-    setRecords(updatedRecords);
-    setFilteredRecords(updatedRecords);
-    localStorage.setItem("childRecords", JSON.stringify(updatedRecords));
-  };
-
+  // Close sidebar on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (sidebarOpen && sidebarRef.current && !sidebarRef.current.contains(e.target)) {
@@ -68,6 +105,7 @@ function ViewRecords() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [sidebarOpen]);
 
+  // Filter records by search term
   useEffect(() => {
     const term = searchTerm.toLowerCase();
     const filtered = records.filter((r) =>
@@ -78,38 +116,38 @@ function ViewRecords() {
 
   const content = {
     en: {
-      home:"Home",
+      home: "Home",
       title: "GROWTH GUARDIAN",
       register: "Register a Child",
       viewRecords: "View Child Records",
       delete: "Delete Record",
       update: "Update Record",
       confirmDelete: "Are you sure you want to delete this child's record?",
-      logout:'Log Out',
-      search:"Search by name..."
+      logout: "Log Out",
+      search: "Search by name...",
     },
     hi: {
-      home:"होम",
+      home: "होम",
       title: "विकास संरक्षक",
       register: "नया बच्चा पंजीकृत करें",
       viewRecords: "बच्चे के रिकॉर्ड देखें",
       delete: "रिकॉर्ड हटाएँ",
       update: "रिकॉर्ड अपडेट करें",
       confirmDelete: "क्या आप वाकई इस बच्चे का रिकॉर्ड हटाना चाहते हैं?",
-      logout:'लॉग आउट',
-      search:"नाम से खोजें"
+      logout: "लॉग आउट",
+      search: "नाम से खोजें",
     },
   };
 
   const chromaItems = filteredRecords.map((r) => ({
-    id: r.id,
-    title: r.name || "Unnamed",
-    subtitle: `${r.age || "?"} years • ${r.gender || "Unknown"}`,
-    uniqueId: r.id,
-    borderColor: "#3B82F6",
-    gradient: "linear-gradient(145deg, #3B82F6, #1E40AF)",
-    onClick: () => handleChildClick(r),
-  }));
+  id: r.child_id || r._id || r.id,
+  title: `${r.name || "Unnamed"} (${r.child_id || r._id || r.id})`,
+  subtitle: `${r.age || "?"} years • ${r.gender || "Unknown"}`,
+  borderColor: "#3B82F6",
+  gradient: "linear-gradient(145deg, #3B82F6, #1E40AF)",
+  onClick: () => handleChildClick(r),
+}));
+
 
   return (
     <div className="viewrecords-container">
@@ -135,21 +173,10 @@ function ViewRecords() {
       </div>
 
       <div className="language-card">
-        <button
-          className={`lang-btn ${language === "en" ? "active" : ""}`}
-          onClick={() => setLanguage("en")}
-        >
-          English
-        </button>
-        <button
-          className={`lang-btn ${language === "hi" ? "active" : ""}`}
-          onClick={() => setLanguage("hi")}
-        >
-          हिन्दी
-        </button>
+        <button className={`lang-btn ${language === "en" ? "active" : ""}`} onClick={() => setLanguage("en")}>English</button>
+        <button className={`lang-btn ${language === "hi" ? "active" : ""}`} onClick={() => setLanguage("hi")}>हिन्दी</button>
       </div>
 
-      {/* Title with icon */}
       <h2 className="records-title">
         <MdChildCare className="title-icon" /> {content[language].viewRecords}
       </h2>

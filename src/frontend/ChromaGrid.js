@@ -108,9 +108,9 @@ export const ChromaGrid = ({
             cursor: c.url || c.onClick ? 'pointer' : 'default'
           }}
         >
+          {c.uniqueId && <span className="unique-id">ID: {c.uniqueId}</span>}
           <footer className="chroma-info">
             <h3 className="name">{c.title}</h3>
-            {c.uniqueId && <span className="unique-id">ID: {c.uniqueId}</span>}
             <p className="role">{c.subtitle}</p>
           </footer>
         </article>

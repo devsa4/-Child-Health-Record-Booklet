@@ -135,23 +135,44 @@ function ChildForm() {
     });
   };
 
-  // ✅ Save all fields including malnutrition and illnesses
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.consent) {
-      setShowAlert(true);
-      return;
-    }
-    setShowAlert(false);
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!formData.consent) {
+    setShowAlert(true);
+    return;
+  }
+  setShowAlert(false);
 
-    const savedRecords = JSON.parse(localStorage.getItem("childRecords")) || [];
-    const newRecord = { ...formData }; // malnutrition and illnesses included
-    const updatedRecords = [...savedRecords, newRecord];
-    localStorage.setItem("childRecords", JSON.stringify(updatedRecords));
+  try {
+    const response = await fetch("/child", { // <-- replace with your cloud endpoint
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        child_id: formData.id,
+        name: formData.name,
+        dateOfBirth: formData.dob,
+        age: Number(formData.age || 0),
+        gender: formData.gender,
+        guardian: formData.guardian,
+        weight: Number(formData.weight || 0),
+        height: Number(formData.height || 0),
+        illnesses: formData.illnesses,
+        malnutrition: formData.malnutrition,
+        photo: formData.photo,
+        consent: formData.consent,
+        geo: { city: location.city, country: location.country },
+      }),
+    });
 
-    console.log("Saved:", newRecord);
+    if (!response.ok) throw new Error("Failed to save record to cloud");
+
+    console.log("Saved to cloud:", formData);
     setShowSuccess(true);
-  };
+  } catch (error) {
+    console.error("❌ Cloud Save Error:", error);
+    alert("Failed to save to cloud. Please try again.");
+  }
+};
 
   const openCamera = async () => {
     setShowCamera(true);

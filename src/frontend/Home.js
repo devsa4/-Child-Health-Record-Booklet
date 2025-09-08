@@ -49,6 +49,7 @@ useEffect(() => {
       view:'View Child Record',
       profile:'Your Profile',
       logout:'Log Out'
+      
     },
     hi: {
       home:"होम",
@@ -65,7 +66,7 @@ useEffect(() => {
   };
 
   return (
-    <div className={`home-container ${!loading ? 'fade-in' : ''}`}>
+    <div className={`home-container ${!loading ? 'fade-in1' : ''}`}>
       <video autoPlay loop muted playsInline className="background-video">
         <source src="/backgroundhome.mp4" type="video/mp4" />
       </video>
@@ -94,21 +95,29 @@ useEffect(() => {
               <li onClick={() => navigate('/register')}>{content[language].register}</li>
               <li onClick={() => navigate('/add-record/:childId')}>{content[language].update}</li>
               <li onClick={() => navigate('/view-records')}>{content[language].view}</li>
-              <li onClick={() => navigate('/home')}>{content[language].profile}</li>
-            </ul>
-            <button className="logout-button">{content[language].logout}</button>
-          </div>
+              <li onClick={() => navigate('/profile')}>{content[language].profile}</li>
+      </ul>        
+     <button
+    className="logout-button"
+    onClick={() => {
+      navigate('/login');
+      setSidebarOpen(false); // optional: close sidebar after logout
+    }}
+  >
+    {content[language].logout}
+  </button>
+</div>
 
-          <div className="language-card">
-            <div className="language-toggle">
+          <div className="language-card1">
+            <div className="language-toggle1">
               <button
-                className={`lang-btn ${language === 'en' ? 'active' : ''}`}
+                className={`lang-btn1 ${language === 'en' ? 'active' : ''}`}
                 onClick={() => setLanguage('en')}
               >
                 English
               </button>
               <button
-                className={`lang-btn ${language === 'hi' ? 'active' : ''}`}
+                className={`lang-btn1 ${language === 'hi' ? 'active' : ''}`}
                 onClick={() => setLanguage('hi')}
               >
                 हिन्दी

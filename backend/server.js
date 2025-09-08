@@ -14,8 +14,8 @@ app.use(cors({
 }));
 
 // ✅ Increase JSON payload limit (important for Base64 photos)
-app.use(express.json({ limit: "2mb" }));
-app.use(express.urlencoded({ limit: "2mb", extended: true }));
+app.use(express.json({ limit: "3mb" }));
+app.use(express.urlencoded({ limit: "3mb", extended: true }));
 
 // ✅ Connect to MongoDB Atlas
 mongoose.connect(process.env.MONGO_URI)

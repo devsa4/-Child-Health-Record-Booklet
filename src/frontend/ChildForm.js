@@ -8,6 +8,7 @@ import {
   FaMapMarkerAlt,
   FaBars,
 } from "react-icons/fa";
+
 import { MdFamilyRestroom } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 import "./ChildForm.css";
@@ -31,6 +32,8 @@ function ChildForm() {
   const [showAlert, setShowAlert] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showDuplicate, setShowDuplicate] = useState(false);
+  const [showSizeError, setShowSizeError] = useState(false); // New state for size error
+  const [showFloatingSave, setShowFloatingSave] = useState(false);
 
   const navigate = useNavigate();
 
@@ -52,6 +55,14 @@ function ChildForm() {
     illnesses: "",
     consent: false,
   });
+
+  useEffect(() => {
+    if (formData.name || formData.age || formData.photo) {
+      setShowFloatingSave(true);
+      const timer = setTimeout(() => setShowFloatingSave(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [formData]);
 
   useEffect(() => {
     const updateStatus = () => {
@@ -129,8 +140,16 @@ function ChildForm() {
 
     if (type === "file") {
       if (files && files[0]) {
+        const file = files[0];
+        // Check if file size is greater than 2MB (2 * 1024 * 1024 bytes)
+        if (file.size > 2 * 1024 * 1024) {
+          setShowSizeError(true);
+          e.target.value = null; // Clear the input field to prevent re-upload
+          return;
+        }
+
         try {
-          const base64Image = await toBase64(files[0]);
+          const base64Image = await toBase64(file);
           setFormData((prev) => ({ ...prev, [name]: base64Image }));
         } catch (error) {
           console.error("Error converting file to base64", error);
@@ -158,13 +177,12 @@ function ChildForm() {
 
     try {
       const response = await fetch("http://localhost:5000/child", {
-        // <-- update to your deployed API later
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          child_id: formData.id, // ✅ matches schema
+          child_id: formData.id,
           name: formData.name,
-          dateOfBirth: formData.dob, // ✅ was dob
+          dateOfBirth: formData.dob,
           age: Number(formData.age || 0),
           gender: formData.gender,
           guardian: formData.guardian,
@@ -172,7 +190,7 @@ function ChildForm() {
           height: Number(formData.height || 0),
           illnesses: formData.illnesses,
           malnutrition: formData.malnutrition,
-          photo: formData.photo, // ✅ base64 image
+          photo: formData.photo,
           consent: formData.consent,
           geo: { city: location.city, country: location.country },
         }),
@@ -184,7 +202,7 @@ function ChildForm() {
       setShowSuccess(true);
     } catch (error) {
       console.error("❌ Cloud Save Error:", error);
-      setShowDuplicate(true); // show duplicate popup instead of alert
+      setShowDuplicate(true);
     }
   };
 
@@ -231,6 +249,7 @@ function ChildForm() {
       profile: "Your Profile",
       uid: "Unique ID",
       online: "Online",
+      excess: "(Photo should not exceed 2MB).",
       offline: "Offline",
       uphoto: "Upload Photo",
       cphoto: "Capture Photo",
@@ -268,6 +287,7 @@ function ChildForm() {
       title: "विकास संरक्षक",
       register: "नया बच्चा पंजीकृत करें",
       update: "पंजीकृत बच्चे को अपडेट करें",
+      excess: "(फोटो 2MB से अधिक नहीं होनी चाहिए)",
       formTitle: "नया बाल डेटा संग्रह फ़ॉर्म",
       consentWarning: "जारी रखने के लिए अभिभावक की सहमति आवश्यक है।",
       view: "बच्चों के रिकॉर्ड देखें",
@@ -316,7 +336,7 @@ function ChildForm() {
     { key: "weight", type: "text" },
     { key: "height", type: "text" },
     { key: "guardian", type: "text" },
-    { key: "illnesses", type: "textarea" }, // ✅ Recent Illness field
+    { key: "illnesses", type: "textarea" },
   ];
 
   return (
@@ -325,51 +345,32 @@ function ChildForm() {
         <source src="/backgroundChildForm.mp4" type="video/mp4" />
       </video>
       <div className="background-overlay"></div>
+{sidebarOpen && (
+  <div
+    className="sidebar-backdrop"
+    onClick={() => setSidebarOpen(false)}
+  />
+)}
 
-      {sidebarOpen && (
-        <div
-          className="sidebar-backdrop"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+<div ref={sidebarRef} className={`sidebar ${sidebarOpen ? "open" : ""}`}>
+  <ul className="sidebar-links">
+    <li onClick={() => { navigate("/home"); setSidebarOpen(false); }}>{content[language].home}</li>
+    <li onClick={() => { navigate("/register"); setSidebarOpen(false); }}>{content[language].register}</li>
+    <li onClick={() => { navigate("/add-record/:childId"); setSidebarOpen(false); }}>{content[language].update}</li>
+    <li onClick={() => { navigate("/view-records"); setSidebarOpen(false); }}>{content[language].view}</li>
+    <li onClick={() => { navigate("/profile"); setSidebarOpen(false); }}>{content[language].profile}</li>
+  </ul>
+  <button
+    className="logout-button"
+    onClick={() => {
+      navigate('/login');
+      setSidebarOpen(false);
+    }}
+  >
+    {content[language].logout}
+  </button>
+</div>
 
-      <div ref={sidebarRef} className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-        <ul className="sidebar-links">
-          <li
-            onClick={() => {
-              navigate("/home");
-              setSidebarOpen(false);
-            }}
-          >
-            {content[language].home}
-          </li>
-          <li
-            onClick={() => {
-              navigate("/register");
-              setSidebarOpen(false);
-            }}
-          >
-            {content[language].register}
-          </li>
-          <li onClick={() => navigate("/add-record/:childId")}>
-            {content[language].update}
-          </li>
-          <li
-            onClick={() => {
-              navigate("/view-records");
-              setSidebarOpen(false);
-            }}
-          >
-            {content[language].view}
-          </li>
-          <li onClick={() => setSidebarOpen(false)}>
-            {content[language].profile}
-          </li>
-        </ul>
-        <button className="logout-button" onClick={() => setSidebarOpen(false)}>
-          {content[language].logout}
-        </button>
-      </div>
 
       <div className="top-left-brand">
         <MdFamilyRestroom className="brand-icon" />
@@ -404,24 +405,10 @@ function ChildForm() {
             marginBottom: "1rem",
           }}
         >
-          <h2
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              margin: 0,
-            }}
-          >
+          <h2 className="form-title-with-icon">
             <FaChild className="title-icon" /> {content[language].formTitle}
           </h2>
-          <div
-            className={`online-indicator ${isOnline ? "online" : "offline"}`}
-            style={{
-              fontSize: "0.9rem",
-              padding: "4px 12px",
-              borderRadius: "8px",
-            }}
-          >
+          <div className={`status-badge ${isOnline ? "online" : "offline"}`}>
             {isOnline ? content[language].online : content[language].offline}
           </div>
         </div>
@@ -486,7 +473,7 @@ function ChildForm() {
 
                   <div className="photo-button-row mt-2">
                     <label htmlFor="choose-photo" className="btn-purple">
-                      <FaUpload className="photo-icon" />{" "}
+                      <FaUpload className="photo-icon" />
                       {content[language].uphoto}
                     </label>
                     <input
@@ -502,10 +489,13 @@ function ChildForm() {
                       className="btn-blue"
                       onClick={openCamera}
                     >
-                      <FaCamera className="photo-icon" />{" "}
+                      <FaCamera className="photo-icon" />
                       {content[language].cphoto}
                     </button>
                   </div>
+                  <p className="photo-size-info">
+                    {content[language].excess}
+                  </p>
                   {formData.photo && (
                     <div className="photo-preview mt-3">
                       <img
@@ -516,6 +506,7 @@ function ChildForm() {
                           height: "200px",
                           borderRadius: "8px",
                           objectFit: "cover",
+                          border: "2px solid white",
                         }}
                       />
                       {photoCaptured && (
@@ -614,6 +605,11 @@ function ChildForm() {
           </div>
         </Form>
       </div>
+      {showFloatingSave && (
+        <div className="floating-save-icon">
+          <FaSave /> Saving…
+        </div>
+      )}
 
       {/* Camera Modal */}
       {showCamera && (
@@ -682,7 +678,7 @@ function ChildForm() {
       )}
       {/* Duplicate Error Popup */}
       {showDuplicate && (
-        <div className="error-popup">
+        <div className="error-popup1">
           <div className="error-content">
             <svg
               className="error-icon"
@@ -707,6 +703,29 @@ function ChildForm() {
                 className="btn-red"
                 onClick={() => setShowDuplicate(false)}
               >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* File Size Error Popup */}
+      {showSizeError && (
+        <div className="error-popup1">
+          <div className="error-content">
+            <svg
+              className="error-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 52 52"
+            >
+              <circle className="error-circle" cx="26" cy="26" r="25" fill="none" />
+              <line className="error-line" x1="16" y1="16" x2="36" y2="36" />
+              <line className="error-line" x1="36" y1="16" x2="16" y2="36" />
+            </svg>
+            <h3>File Size Exceeded. Please Try Again.</h3>
+            <p>{content[language].excess}</p>
+            <div className="popup-buttons mt-3">
+              <button className="btn-red" onClick={() => setShowSizeError(false)}>
                 Close
               </button>
             </div>

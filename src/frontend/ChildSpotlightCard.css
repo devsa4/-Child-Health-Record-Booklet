@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap');
+.spotlight-card {
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.2),
+    rgba(255, 255, 255, 0.2)
+  ),
+  linear-gradient(to right, #f5e6ac, #ffdb4d); /* yellow overlay */
+  backdrop-filter: blur(12px) brightness(1.1);
+  -webkit-backdrop-filter: blur(12px) brightness(1.1);
+  padding: 1rem;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: 'Merriweather', serif;
+  margin: 1rem auto;
+  max-width: 500px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  animation: pulseFade 1.5s ease-in-out infinite alternate;
+  color: #1f2937;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+
+
+
+@keyframes pulseFade {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.02);
+    opacity: 1;
+  }
+}

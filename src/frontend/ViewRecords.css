@@ -1,5 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap');
-
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap');
 .viewrecords-container {
   padding: 20px;
   min-height: 100vh;
@@ -20,6 +20,31 @@
   object-fit: cover;
   filter: blur(4px);
   z-index: -2;
+}
+.loader-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: #dedcdc;
+  font-size: 1rem;
+}
+
+.loader {
+  width: 28px;
+  height: 28px;
+  border: 4px solid #ffffff;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Black overlay on top of video */
@@ -56,7 +81,7 @@
   color: white;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .menu-icon {
@@ -81,7 +106,7 @@
 }
 
 .lang-btn {
-  background-color: rgba(255,255,255,0.15);
+  background-color: rgba(255, 255, 255, 0.15);
   color: white;
   border: none;
   border-radius: 999px;
@@ -93,7 +118,7 @@
 
 .lang-btn.active {
   background-color: #3B82F6;
-  box-shadow: 0 0 8px rgba(59,130,246,0.5);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
 }
 
 /* Sidebar */
@@ -106,7 +131,7 @@
   background: #fdfdfd;
   border-radius: 16px;
   padding: 1rem;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -158,23 +183,25 @@
 .records-title {
   display: flex;
   align-items: center;
-  justify-content: center; /* center title */
+  justify-content: center;
   font-size: 1.8rem;
   color: #ffffff;
+  font-weight: bold !important;
   margin-top: 2rem;
-  gap: 0.5rem; /* spacing between icon and text */
+  gap: 0.5rem;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.4); /* 👈 subtle glow */
 }
+
 
 .title-icon {
-  font-size: 2rem; /* icon size */
+  font-size: 2rem;
   color: #fafcff;
 }
-
 
 .no-records {
   text-align: center;
   font-weight: bold;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.4);
   display: inline-block;
   padding: 10px 20px;
   border-radius: 8px;
@@ -200,11 +227,12 @@
   outline: none;
   font-size: 1rem;
 }
+
 .no-records-container {
   display: flex;
-  justify-content: center; /* center horizontally */
-  align-items: center;     /* center vertically */
-  height: 300px;           /* or set to parent container height */
+  justify-content: center;
+  align-items: center;
+  height: 300px;
   width: 100%;
   font-size: 1.2rem;
   color: #c1bdbd;
@@ -248,11 +276,15 @@
 }
 
 /* Button hover effect */
-button, .lang-btn, .logout-button {
+button,
+.lang-btn,
+.logout-button {
   transition: all 0.3s ease;
 }
 
-button:hover, .lang-btn:hover, .logout-button:hover {
+button:hover,
+.lang-btn:hover,
+.logout-button:hover {
   background-color: #2563EB;
   color: #ffffff;
   transform: scale(1.05);
@@ -330,7 +362,7 @@ button:hover, .lang-btn:hover, .logout-button:hover {
   align-items: center;
   justify-content: center;
   margin-top: 20px;
-  margin-left: auto; /* Push the button to the right */
+  margin-left: auto;
 }
 
 .download-button:hover {
@@ -339,7 +371,6 @@ button:hover, .lang-btn:hover, .logout-button:hover {
 }
 
 /* The delete-button styles have been removed */
-
 .animate-popup {
   animation: popup-fadein 0.3s ease-out;
 }
@@ -366,6 +397,7 @@ button:hover, .lang-btn:hover, .logout-button:hover {
   object-fit: cover;
   border: 3px solid #3B82F6;
 }
+
 
 /* Unique ID Popup */
 .unique-id-modal-overlay {
@@ -406,8 +438,6 @@ button:hover, .lang-btn:hover, .logout-button:hover {
   color: #333;
 }
 
-
-
 .unique-id-modal-content input {
   width: 90%;
   padding: 10px;
@@ -435,7 +465,7 @@ button:hover, .lang-btn:hover, .logout-button:hover {
 
 /* ChromaGrid-specific CSS */
 .unique-id {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   color: #a0aec0;
   margin-top: 5px;
   display: block;
@@ -451,3 +481,77 @@ button:hover, .lang-btn:hover, .logout-button:hover {
   font-size: 0.9rem;
   transition: background-color 0.3s ease;
 }
+.encouragement-carousel {
+  text-align: center;
+  font-size: 1rem;
+  font-family: 'Merriweather', serif;
+  font-weight: 500;
+  margin: 1rem 0;
+  transition: opacity 0.3s ease;
+}
+
+.fade-in {
+  opacity: 1;
+}
+
+.fade-out {
+  opacity: 0;
+}
+
+.health-summary-cards {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.summary-card {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: white;
+}
+.summary-card.healthy { background: #46b9d5; }
+.summary-card.improving { background: #f59e0b; }
+.summary-card.attention { background: #ef4444; }
+.summary-card.healthy {
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+.summary-card.improving {
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+.summary-card.attention {
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+.summary-card:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+.heatmap-box {
+  margin: 1rem auto;
+  max-width: 600px;
+  text-align: center;
+}
+.heatmap-grid {
+  display: flex;
+  justify-content: space-around;
+  gap: 1rem;
+}
+.heatmap-cell {
+  flex: 1;
+  font-size: 0.85rem;
+}
+.heat-bar {
+  margin-top: 4px;
+  height: 24px;
+  border-radius: 6px;
+  color: white;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.records-title {
+  text-transform: uppercase;
+}
+

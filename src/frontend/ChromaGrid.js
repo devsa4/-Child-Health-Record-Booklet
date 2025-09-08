@@ -83,41 +83,51 @@ export const ChromaGrid = ({
     card.style.setProperty('--mouse-x', `${x}px`);
     card.style.setProperty('--mouse-y', `${y}px`);
   };
+const isEmpty = !items || items.length === 0;
 
-  return (
-    <div
-      ref={rootRef}
-      className={`chroma-grid ${className}`}
-      style={{
-        '--r': `${radius}px`,
-        '--cols': columns,
-        '--rows': rows
-      }}
-      onPointerMove={handleMove}
-      onPointerLeave={handleLeave}
-    >
-      {data.map((c, i) => (
-        <article
-          key={i}
-          className="chroma-card"
-          onMouseMove={handleCardMove}
-          onClick={() => handleCardClick(c)}
-          style={{
-            '--card-border': c.borderColor || 'transparent',
-            '--card-gradient': c.gradient,
-            cursor: c.url || c.onClick ? 'pointer' : 'default'
-          }}
-        >
-          {c.uniqueId && <span className="unique-id">ID: {c.uniqueId}</span>}
-          <footer className="chroma-info">
-            <h3 className="name">{c.title}</h3>
-            <p className="role">{c.subtitle}</p>
-          </footer>
-        </article>
-      ))}
-      <div ref={fadeRef} className="chroma-fade" />
-    </div>
-  );
+return (
+  <>
+    {isEmpty ? (
+      <div className="chroma-loading">
+        <p>Loading records...</p>
+      </div>
+    ) : (
+      <div
+        ref={rootRef}
+        className={`chroma-grid ${className}`}
+        style={{
+          '--r': `${radius}px`,
+          '--cols': columns,
+          '--rows': rows
+        }}
+        onPointerMove={handleMove}
+        onPointerLeave={handleLeave}
+      >
+        {data.map((c, i) => (
+          <article
+            key={i}
+            className="chroma-card"
+            onMouseMove={handleCardMove}
+            onClick={() => handleCardClick(c)}
+            style={{
+              '--card-border': c.borderColor || 'transparent',
+              '--card-gradient': c.gradient,
+              cursor: c.url || c.onClick ? 'pointer' : 'default'
+            }}
+          >
+            <footer className="chroma-info">
+              <h3 className="name">{c.title}</h3>
+              <p className="role">{c.subtitle}</p>
+              {c.uniqueId && <span className="unique-id">ID: {c.uniqueId}</span>}
+            </footer>
+          </article>
+        ))}
+        <div ref={fadeRef} className="chroma-fade" />
+      </div>
+    )}
+  </>
+);
+
 };
 
 export default ChromaGrid;

@@ -1,5 +1,5 @@
 /* ---------------------------
-   Chroma Grid Container
+    Chroma Grid Container
 --------------------------- */
 .chroma-grid {
   position: relative;
@@ -37,7 +37,7 @@
 }
 
 /* ---------------------------
-   Chroma Card
+    Chroma Card
 --------------------------- */
 .chroma-card {
   position: relative;
@@ -56,8 +56,9 @@
   --mouse-y: 50%;
   --spotlight-color: rgba(255, 255, 255, 0.3);
 }
+
 /* ---------------------------
-   Button Hover Enhancement
+    Button Hover Enhancement
 --------------------------- */
 .chroma-card button,
 .chroma-card .btn {
@@ -66,10 +67,10 @@
 
 .chroma-card button:hover,
 .chroma-card .btn:hover {
-  transform: translateY(-2px) scale(1.05); /* subtle lift and scale */
-  color: #ffffff; /* text stays white */
-  background-color: rgba(59, 130, 246, 0.8); /* blue hover background */
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25); /* slight shadow */
+  transform: translateY(-2px) scale(1.05);
+  color: #ffffff;
+  background-color: rgba(59, 130, 246, 0.8);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
   cursor: pointer;
 }
 
@@ -121,12 +122,16 @@
   column-gap: 0.75rem;
 }
 
-.chroma-info .role,
-.chroma-info .handle {
-  color: #ffffff; /* ya koi light color jo background par visible ho */
-  font-size: 0.9rem; /* optional, readability ke liye */
+/* This is the corrected rule */
+.chroma-info .role {
+  color: #000000;
+  font-size: 0.9rem;
 }
 
+.chroma-info .handle {
+  color: #ffffff;
+  font-size: 0.9rem;
+}
 
 /* Overlay for depth/grayscale effect */
 .chroma-overlay {
@@ -161,12 +166,18 @@
     white 100%
   );
 }
+.chroma-loading {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1rem;
+  color: #555;
+}
+
 /* ====== Stack/Fade-In Animation ====== */
-/* ====== Stack/Fade-In Animation (Slower) ====== */
 @keyframes stackFadeIn {
   0% {
     opacity: 0;
-    transform: translateY(30px) scale(0.95); /* slightly more movement for smoother effect */
+    transform: translateY(30px) scale(0.95);
   }
   100% {
     opacity: 1;
@@ -175,20 +186,27 @@
 }
 
 .chroma-card {
-  opacity: 0; /* start hidden for animation */
-  animation: stackFadeIn 1.2s forwards; /* slower: duration doubled from 0.6s to 1.2s */
+  opacity: 0;
+  animation: stackFadeIn 1.2s forwards;
+}
+.chroma-card:nth-child(even) {
+  animation: fadeInLeft 1.2s forwards;
 }
 
-/* Apply staggered animation for each card */
-.chroma-card:nth-child(1) { animation-delay: 0.2s; }
-.chroma-card:nth-child(2) { animation-delay: 0.4s; }
-.chroma-card:nth-child(3) { animation-delay: 0.6s; }
-.chroma-card:nth-child(4) { animation-delay: 0.8s; }
-.chroma-card:nth-child(5) { animation-delay: 1s; }
-.chroma-card:nth-child(6) { animation-delay: 1.2s; }
-.chroma-card:nth-child(7) { animation-delay: 1.4s; }
-.chroma-card:nth-child(8) { animation-delay: 1.6s; }
-/* Add more as needed */
+.chroma-card:nth-child(odd) {
+  animation: fadeInRight 1.2s forwards;
+}
+@keyframes fadeInLeft {
+  0% { opacity: 0; transform: translateX(-30px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeInRight {
+  0% { opacity: 0; transform: translateX(30px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+
 .modal-content {
   max-height: 90vh;
   overflow-y: auto;
@@ -202,11 +220,12 @@ canvas {
   max-width: 100% !important;
   height: auto !important;
 }
+
 /* Delete Button (for ChromaGrid) */
 .delete-btn {
-  background: transparent !important; /* remove white background */
-  border: none !important;            /* remove border */
-  padding: 0.3rem;                    /* keep a little clickable area */
+  background: transparent !important;
+  border: none !important;
+  padding: 0.3rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -217,11 +236,26 @@ canvas {
 /* Make the trash icon white */
 .delete-btn svg {
   color: #ffffff !important;
-  font-size: 1.2rem; /* adjust size */
+  font-size: 1.2rem;
 }
 
 /* Hover effect */
 .delete-btn:hover {
   transform: scale(1.15);
   opacity: 0.85;
+}
+
+/* New style to make UniqueID font size small */
+.unique-id {
+  font-size: 0.75rem;
+}
+.chroma-card {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.chroma-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+.chroma-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }

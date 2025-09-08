@@ -62,10 +62,12 @@ function AddRecordPage() {
       addRecord: "Add Record",
       parentName: "Parent's Name",
       age: "Age",
+      progress: "Height & Weight Progress",
       dob: "DOB",
       home: "Home",
       logout: "Log Out",
       view: "View Child Record",
+      add: "📈 Keep adding progress records to see the child's growth over time.",
       profile: "Your Profile",
       name: "Name"
     },
@@ -84,11 +86,13 @@ function AddRecordPage() {
       malnutrition: "कुपोषण के लक्षण",
       addRecord: "रिकॉर्ड जोड़ें",
       parentName: "अभिभावक का नाम",
+      progress: "ऊंचाई और वजन प्रगति",
       age: "आयु",
       dob: "जन्म तिथि",
       view: "बच्चों के रिकॉर्ड देखें",
       profile: "अपनी प्रोफ़ाइल देखें",
-      name: "नाम"
+      name: "नाम",
+      add: "📈 समय के साथ बच्चे की वृद्धि देखने के लिए प्रगति रिकॉर्ड जोड़ते रहें।"
     }
   };
 
@@ -173,6 +177,37 @@ function AddRecordPage() {
     ]
   };
 
+
+const chartOptions = {
+  maintainAspectRatio: false,
+  scales: {
+    x: {
+      grid: {
+        color: 'rgba(255, 255, 255, 0.2)' // subtle white grid
+      },
+      ticks: {
+        color: '#ffffff' // white axis labels
+      }
+    },
+    y: {
+      grid: {
+        color: 'rgba(255, 255, 255, 0.2)'
+      },
+      ticks: {
+        color: '#ffffff'
+      }
+    }
+  },
+  plugins: {
+    legend: {
+      labels: {
+        color: '#ffffff' // white legend text
+      }
+    }
+  }
+};
+
+
   return (
     <div className="add-record-page">
       <div className="moving-backgrounds">
@@ -189,19 +224,35 @@ function AddRecordPage() {
         <FaBars className="menu-icon" onClick={toggleSidebar} />
       </div>
 
-      <div ref={sidebarRef} className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-        <ul className="sidebar-links">
-          <li onClick={() => navigate("/home")}>{content[language].home}</li>
-          <li onClick={() => navigate("/register")}>{content[language].register}</li>
-          <li>{currentContent.update}</li>
-          <li onClick={() => navigate("/view-records")}>{content[language].view}</li>
-          <li>{content[language].profile}</li>
-        </ul>
-        <button className="logout-button">{content[language].logout}</button>
-      </div>
+   {sidebarOpen && (
+  <div
+    className="sidebar-backdrop"
+    onClick={() => setSidebarOpen(false)}
+  />
+)}
 
-      <div className="language-card">
-        <div className="language-toggle">
+<div ref={sidebarRef} className={`sidebar ${sidebarOpen ? "open" : ""}`}>
+  <ul className="sidebar-links">
+    <li onClick={() => { navigate("/home"); setSidebarOpen(false); }}>{content[language].home}</li>
+    <li onClick={() => { navigate("/register"); setSidebarOpen(false); }}>{content[language].register}</li>
+    <li onClick={() => { navigate("/add-record/:childId"); setSidebarOpen(false); }}>{content[language].update}</li>
+    <li onClick={() => { navigate("/view-records"); setSidebarOpen(false); }}>{content[language].view}</li>
+    <li onClick={() => { navigate("/profile"); setSidebarOpen(false); }}>{content[language].profile}</li>
+  </ul>
+  <button
+    className="logout-button"
+    onClick={() => {
+      navigate('/login');
+      setSidebarOpen(false);
+    }}
+  >
+    {content[language].logout}
+  </button>
+</div>
+
+
+      <div className="language-card1">
+        <div className="language-toggle1">
           <button
             className={`lang-btn ${language === "en" ? "active" : ""}`}
             onClick={() => setLanguage("en")}
@@ -209,7 +260,7 @@ function AddRecordPage() {
             English
           </button>
           <button
-            className={`lang-btn ${language === "hi" ? "active" : ""}`}
+            className={`lang-btn1 ${language === "hi" ? "active" : ""}`}
             onClick={() => setLanguage("hi")}
           >
             हिन्दी
@@ -236,8 +287,11 @@ function AddRecordPage() {
           <div className="child-record-form">
             <div className="child-info">
               <p>
-                <strong>{currentContent.enterId}:</strong> {childData.id}
-              </p>
+               
+  <strong>{currentContent.enterId}:</strong> {childData.child_id || childData._id || childData.id}
+</p>
+
+             
               <p>
                 <strong>{currentContent.name}:</strong> {childData.name}
               </p>
@@ -277,14 +331,16 @@ function AddRecordPage() {
                 onChange={(e) => setMalnutrition(e.target.value)}
               />
               <button type="submit">{currentContent.addRecord}</button>
-            </form>
+            </form> 
+{records.length > 0 && (
+  <div className="charts">
+    <h3>{content[language].progress}</h3>
+    <p className="growth-note">{content[language].add}</p>  
+    <Line data={chartData} options={chartOptions} />
+  </div>
+)}
 
-            {records.length > 0 && (
-              <div className="charts">
-                <h3>Height & Weight Progress</h3>
-                <Line data={chartData} />
-              </div>
-            )}
+
           </div>
         )}
       </div>

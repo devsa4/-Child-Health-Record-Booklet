@@ -156,55 +156,39 @@
 
 
 /* Language Toggle Glass Card */
-.language-card {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 2;
-  padding: 0.6rem 1rem;
+.language-card1 {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 0.4rem 0.8rem;
   border-radius: 20px;
-  background: linear-gradient(
-    to bottom right,
-    rgba(255, 255, 255, 0.12),
-    rgba(255, 255, 255, 0.06)
-  );
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+.language-toggle1 {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  gap: 12px; /* 👈 adds space between buttons */
 }
 
-.language-toggle {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.lang-btn {
+.lang-btn1 {
   background-color: rgba(255, 255, 255, 0.15);
   color: white;
   border: none;
   border-radius: 999px;
   padding: 0.3rem 0.9rem;
-  font-size: 0.85rem;
-  font-family: 'Poppins', sans-serif;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.lang-btn:hover {
-  background-color: rgba(255, 255, 255, 0.25);
-  transform: scale(1.05);
+  font-weight: 600;
   cursor: pointer;
+  transition: 0.3s;
 }
 
-.lang-btn.active {
-  background-color: #007bff;
-  color: white;
-  box-shadow: 0 0 8px rgba(0, 123, 255, 0.4);
+.lang-btn1.active {
+  background-color: #007bff; /* Blue background */
+  color: white;              /* White text for contrast */
 }
+
 
 /* Main Content */
 .home-content {
@@ -353,13 +337,37 @@
   opacity: 0;
   pointer-events: none;
 }
+.fade-in1 {
+  opacity: 1;
+  animation: fadeInOnly 1s ease-out forwards;
+}
+
+@keyframes fadeInOnly {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+  }
+}
 
 .loader-animation {
   font-size: 80px;
   color: white !important;
   animation: zoomPulse 2s infinite ease-in-out;
 }
+.icon-fade-out {
+  animation: fadeOut 1s ease-in forwards;
+}
 
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
 .icon-fade-out {
   animation: fadeOutIcon 1s ease forwards;
 }
@@ -378,6 +386,7 @@
   }
 }
 
+
 @keyframes fadeOutIcon {
   from {
     opacity: 1;
@@ -389,31 +398,5 @@
   }
 }
 
-/* Entrance effect overlay */
-.entrance-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle at center, rgba(255,255,255,0.2), rgba(0,0,0,0.6));
-  animation: entranceFlash 0.6s ease forwards;
-  z-index: 998;
-  pointer-events: none;
-}
 
-@keyframes entranceFlash {
-  0% {
-    opacity: 0;
-    transform: scale(1.05);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1);
-  }
-}
 

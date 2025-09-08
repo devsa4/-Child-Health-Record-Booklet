@@ -1,8 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+body, button, input, select, textarea {
+  font-family: 'Poppins', sans-serif !important;
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
+/* ChildForm.css */
+.error-icon {
+  width: 52px;
+  height: 52px;
+  display: block;
+  margin: 0 auto;
+}
+.form-title-with-icon {
+  /* Poppins font, bold, and shadow */
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 1.6rem;
+  color: #fff;
+  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.5);
+
+  /* Layout styles from inline */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
 
 html, body {
   width: 100%;
@@ -116,7 +143,9 @@ html, body {
   padding: 1.2rem 1.5rem;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  align-items: center; /* centers content horizontally */
+  justify-content: center; /* centers content vertically */
+  text-align: center; /* ensures text is centered */
   transition: left 0.3s ease, opacity 0.3s ease;
   opacity: 0;
   z-index: 1000;     /* higher so it floats */
@@ -165,12 +194,15 @@ html, body {
   margin: 0;
   font-family: 'Poppins', sans-serif;
   color: #333;
+  
 }
 
 .sidebar-links li {
   padding: 0.6rem 0;
   font-size: 0.95rem;
   cursor: pointer;
+  font-weight: 700; /* makes text bold */
+  
   transition: color 0.2s ease;
 }
 
@@ -178,23 +210,7 @@ html, body {
   color: #007bff;
 }
 
-.logout-button {
-  margin-top: auto; /* Pushes it to the bottom */
-  background-color: #e63946;
-  color: white;
-  border: none;
-  padding: 0.6rem 1rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
-  font-family: 'Poppins', sans-serif;
-  transition: background-color 0.3s ease;
-}
 
-.logout-button:hover {
-  background-color: #d62828;
-}
 /* Language Toggle Glass Card */
 .language-card {
   position: absolute;
@@ -217,11 +233,21 @@ html, body {
   align-items: center;
   gap: 0.5rem;
 }
+#uniqueId label,
+#uniqueId input {
+  font-weight: bold !important;
+}
+.child-form-container input,
+.child-form-container textarea,
+.child-form-container select {
+  font-weight: bold !important;
+}
 
 .photo-button-row {
   display: flex;
   gap: 12px;
   margin-top: 8px;
+  border-image: linear-gradient(to right, #ff6ec4, #7873f5) 1;
 }
 
 
@@ -541,6 +567,7 @@ form textarea {
   top: 0;
   left: 0;
   width: 100%;
+  border-image: linear-gradient(to right, #ff6ec4, #7873f5) 1;
   height: 100%;
   background: rgba(0,0,0,0.5);
   display: flex;
@@ -605,6 +632,7 @@ form textarea {
   border-radius: 12px;
   text-align: center;
   display: flex;
+  border-image: linear-gradient(to right, #ff6ec4, #7873f5) 1;
   flex-direction: column;   /* stack content */
   align-items: center;
   gap: 16px;                /* adds space between elements (buttons, text, etc.) */
@@ -708,6 +736,7 @@ form textarea {
 /* Add this to your CSS */
 .glass-card {
   position: relative !important;
+  border-image: linear-gradient(to right, #ff6ec4, #7873f5) 1;
   background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)) !important;
   backdrop-filter: blur(5px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
@@ -909,10 +938,18 @@ form textarea:focus {
     #28a745,
     #5ce67a
   );
+  box-shadow: none !important; /* removes hover/focus shadow */
+  border: none; /* optional: remove any default border */
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  
 }
 
+.save-record-btn:focus,
+.save-record-btn:active,
+.save-record-btn:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
 
 
 .save-record-btn:hover {
@@ -921,7 +958,126 @@ form textarea:focus {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
   cursor: pointer;
 }
+button:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+button:focus,
+input:focus,
+select:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+.fade-in-section {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.fade-in {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeIn 0.4s ease forwards;
+}
 
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.status-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  background: #333;
+  color: white;
+}
+.floating-save-icon {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #007bff;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 30px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: fadeIn 0.4s ease;
+  z-index: 9999;
+}
+.photo-size-info {
+  font-size: 0.8rem;
+  color: #ccc;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+.status-badge.online {
+  background: linear-gradient(to right, #00c853, #64dd17);
+}
+.error-popup1 {
+  /* Use a flexible layout (flexbox) to center content */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  content: center;
+  align-items: center;
+
+  /* Position the popup in the center of the screen */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  /* Use max-width/max-height for responsiveness, not fixed sizes */
+  max-width: 300px;
+  max-height: 80vh; /* Adjust as needed, prevents it from getting too tall */
+  width: auto;
+  height: auto;
+
+  z-index: 1000;
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+
+.status-badge.offline {
+  background: linear-gradient(to right, #d32f2f, #ff5252);
+}
+
+
+.fade-in-section.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
+.form-entry .form-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: rgba(0, 0, 0, 0.3) !important;
+  border: 2px solid #444;
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  width: 100%;
+  color: #fff;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='30,50 70,90 110,50' fill='none' stroke='white' stroke-width='15'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem;
+}
 
 .save-icon {
   font-size: 1rem;
@@ -942,7 +1098,7 @@ form textarea:focus {
 
 /* Focus effect */
 .form-entry .form-select:focus {
-  border-color: #00000025;
+  border-color: #faf6f625;
   box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
 }
 
@@ -997,66 +1153,3 @@ form textarea:focus {
   100% { box-shadow: inset 0px 0px 0px 40px #009dff; }
 }
 
-/* Popup overlay */
-.error-popup {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1200;
-}
-
-/* Popup box */
-.error-content {
-  background: #fff;
-  padding: 2rem;
-  border-radius: 16px;
-  text-align: center;
-  width: 320px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-  animation: popIn 0.3s ease-in-out;
-}
-
-/* Error icon */
-.error-icon {
-  width: 60px;
-  height: 60px;
-  stroke: #e74c3c;
-  stroke-width: 4;
-  margin-bottom: 1rem;
-}
-
-.error-circle {
-  stroke: #e74c3c;
-  stroke-width: 3;
-  stroke-dasharray: 166;
-  stroke-dashoffset: 166;
-  animation: dashCircle 0.6s ease forwards;
-}
-
-.error-line {
-  stroke: #e74c3c;
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-dasharray: 48;
-  stroke-dashoffset: 48;
-  animation: dashLine 0.4s ease forwards;
-}
-
-@keyframes popIn {
-  from { transform: scale(0.7); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-@keyframes dashCircle {
-  to { stroke-dashoffset: 0; }
-}
-
-@keyframes dashLine {
-  to { stroke-dashoffset: 0; }
-}

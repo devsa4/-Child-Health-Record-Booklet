@@ -1,4 +1,4 @@
-/* Fade-in animation for entire page */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap');/* Fade-in animation for entire page */
 @keyframes pageFadeIn {
   0% {
     opacity: 0;
@@ -18,9 +18,10 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden;
+  overflow: hidden; /* ✅ prevents infinite scroll */
   animation: pageFadeIn 1s ease forwards;
 }
+
 
 
 /* Moving background images container */
@@ -31,6 +32,7 @@
   width: 300%; /* total width for 3 images */
   height: 100%;
   display: flex;
+  pointer-events: none;
   z-index: -2;
   animation: slideBackground 60s linear infinite;
 }
@@ -54,6 +56,7 @@
 .background-overlay {
   position: absolute;
   width: 100%;
+  pointer-events: none;
   height: 100%;
   background-color: rgba(0,0,0,0.3);
   z-index: -1;
@@ -71,6 +74,9 @@
 .unique-id-form,
 .new-record-form {
   display: flex;
+  font-family: 'Poppins', serif;
+  
+  color: white;
   flex-direction: column;
 }
 
@@ -85,6 +91,8 @@ button {
   padding: 0.7rem;
   border: none;
   border-radius: 6px;
+  font-family: 'Poppins', serif;
+  font-weight: 700;
   background-color: #007bff;
   color: white;
   cursor: pointer;
@@ -93,10 +101,22 @@ button {
 button:hover {
   background-color: #0056b3;
 }
+.growth-note {
+  color: #ffffff;
+  font-size: 0.8rem;         /* 👈 smaller text */
+  font-weight: 400;
+  text-align: center;
+  margin: 0.5rem 0 1rem 0;   /* 👈 tight spacing */
+  opacity: 0.75;
+  line-height: 1.2;
+}
 
 .charts {
-  margin-top: 2rem;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-bottom: 1rem;
 }
+
 
 /* Fade-in animation */
 @keyframes fadeIn {
@@ -114,6 +134,7 @@ button:hover {
 .add-record-container {
   max-width: 600px;
   margin: 2rem auto;
+  
   padding: 2rem;
   background-color: rgba(255, 255, 255, 0.1);
   border-radius: 16px;
@@ -215,6 +236,13 @@ button:hover {
   background-color: rgba(255, 255, 255, 0.25); /* Slightly transparent */
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.charts h3 {
+  color: #ffffff;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 1rem;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.3); /* subtle glow */
 }
 
 .child-info p {

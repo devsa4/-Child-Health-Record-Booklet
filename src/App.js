@@ -9,6 +9,7 @@ import { syncUsers } from "./utils/indexeddb";
 import ChildForm from './frontend/ChildForm';   
 import ViewRecords from './frontend/ViewRecords';
 import AddRecordPage from './frontend/AddRecordPage';
+import YourProfile from './frontend/YourProfile';
 
 function App() {
   useEffect(() => {
@@ -31,11 +32,13 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<LoginForm />} />
+      <Route path="/login" element={<LoginForm />} />
       <Route path="/signup" element={<SignUpForm />} />
       <Route path="/home" element={<Home />} />
       <Route path="/register" element={<ChildForm />} />
       <Route path="/view-records" element={<ViewRecords />} /> 
       <Route path="/add-record/:childId" element={<AddRecordPage />} />
+      <Route path="/profile" element={<YourProfile />} /> 
     </Routes>
   );
 }

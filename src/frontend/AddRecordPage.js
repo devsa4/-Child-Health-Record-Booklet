@@ -17,6 +17,43 @@ import "./AddRecordPage.css";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
+const dbName = "AddRecordDB";
+const storeName = "records";
+
+const openDB = () =>
+  new Promise((resolve, reject) => {
+    const request = indexedDB.open(dbName, 1);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(storeName)) {
+        db.createObjectStore(storeName, { keyPath: "id" });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject("Failed to open IndexedDB");
+  });
+
+const saveToIndexedDB = async (data) => {
+  const db = await openDB();
+  const tx = db.transaction(storeName, "readwrite");
+  tx.objectStore(storeName).put({ ...data, synced: false });
+};
+
+const markAsSynced = async (id) => {
+  if (!id) {
+    console.error("❗ markAsSynced aborted — missing ID");
+    return;
+  }
+
+  const db = await openDB();
+  const tx = db.transaction(storeName, "readwrite");
+  const store = tx.objectStore(storeName);
+  const record = await store.get(id);
+  if (record) {
+    store.put({ ...record, synced: true });
+  }
+};
+
 function AddRecordPage() {
   const [language, setLanguage] = useState("en");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -28,7 +65,6 @@ function AddRecordPage() {
   const [malnutrition, setMalnutrition] = useState("");
   const [records, setRecords] = useState([]);
 
-  // unified popup states
   const [popupMessage, setPopupMessage] = useState("");
   const [showPopup, setShowPopup] = useState(false);
 
@@ -47,6 +83,46 @@ function AddRecordPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [sidebarOpen]);
 
+  useEffect(() => {
+  const syncUnsyncedRecords = async () => {
+    const db = await openDB();
+    const tx = db.transaction("records", "readonly");
+    const store = tx.objectStore("records");
+    const recordsToSync = [];
+
+    store.openCursor().onsuccess = (e) => {
+      const cursor = e.target.result;
+      if (cursor) {
+        const record = cursor.value;
+        if (!record.synced && childData?.child_id) {
+          recordsToSync.push(record);
+        }
+        cursor.continue();
+      } else {
+        // ✅ Sync after cursor finishes
+        recordsToSync.forEach(async (record) => {
+          try {
+            const res = await fetch(`/add-record/${childData.child_id}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(record),
+            });
+            if (res.ok) {
+              await markAsSynced(record.id);
+              console.log("🔁 Synced offline record:", record.id);
+            }
+          } catch (err) {
+            console.error("❌ Sync failed for record:", record.id, err);
+          }
+        });
+      }
+    };
+  };
+
+  window.addEventListener("online", syncUnsyncedRecords);
+  return () => window.removeEventListener("online", syncUnsyncedRecords);
+}, [childData]);
+//Language content
   const content = {
     en: {
       title: "GROWTH GUARDIAN",
@@ -119,44 +195,58 @@ function AddRecordPage() {
   };
 
   const handleAddRecord = async (e) => {
-    e.preventDefault();
-    if (!height || !weight) {
-      setPopupMessage("Height and Weight are required!");
+  e.preventDefault();
+
+  if (!height || !weight) {
+    setPopupMessage("Height and Weight are required!");
+    setShowPopup(true);
+    return;
+  }
+
+  const recordId = "RECORD_" + Date.now(); // Unique ID for IndexedDB
+  const newRecord = {
+    id: recordId,
+    height: parseFloat(height),
+    weight: parseFloat(weight),
+    illnesses,
+    malnutrition,
+    date: new Date().toISOString()
+  };
+
+  try {
+    if (!navigator.onLine) {
+      console.log("📦 Saving record offline:", newRecord);
+      await saveToIndexedDB(newRecord);
+      setPopupMessage("Saved offline. Will sync when online.");
       setShowPopup(true);
       return;
     }
 
-    const newRecord = {
-      height: parseFloat(height),
-      weight: parseFloat(weight),
-      illnesses,
-      malnutrition,
-      date: new Date().toISOString()
-    };
+    const res = await fetch(`/add-record/${childData.child_id || childData._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newRecord)
+    });
 
-    try {
-      const res = await fetch(`/add-record/${childData.child_id || childData._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newRecord)
-      });
-      if (!res.ok) throw new Error("Failed to add record");
+    if (!res.ok) throw new Error("Failed to add record");
 
-      const updatedChild = await res.json();
-      setRecords(updatedChild.history || []);
-      setHeight("");
-      setWeight("");
-      setIllnesses("");
-      setMalnutrition("");
+    const updatedChild = await res.json();
+    setRecords(updatedChild.history || []);
+    setHeight("");
+    setWeight("");
+    setIllnesses("");
+    setMalnutrition("");
 
-      setPopupMessage("Record added successfully!");
-      setShowPopup(true);
-    } catch (err) {
-      console.error(err);
-      setPopupMessage("Error saving record to cloud");
-      setShowPopup(true);
-    }
-  };
+    await markAsSynced(recordId); // ✅ Mark as synced in IndexedDB
+
+    setPopupMessage("Record added successfully!");
+    setShowPopup(true);
+  } catch (err) {
+    console.error(err);
+    setPopupMessage("Error saving record to cloud");
+    setShowPopup(true);
+  }
+};
 
   // Chart data
   const chartData = {

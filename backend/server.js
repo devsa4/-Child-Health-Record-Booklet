@@ -106,6 +106,7 @@ const childSchema = new mongoose.Schema({
   },
   history: [
     {
+      id: String,
       height: Number,
       weight: Number,
       illnesses: String,

@@ -22,6 +22,73 @@ const toBase64 = (file) =>
     reader.onerror = (error) => reject(error);
   });
 
+// ✅ IndexedDB setup
+const dbName = "ChildFormDB";
+const storeName = "children";
+
+const openDB = () =>
+  new Promise((resolve, reject) => {
+    const request = indexedDB.open(dbName, 1);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(storeName)) {
+        db.createObjectStore(storeName, { keyPath: "id" });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject("Failed to open IndexedDB");
+  });
+
+const saveToIndexedDB = async (data) => {
+  const db = await openDB();
+  const tx = db.transaction(storeName, "readwrite");
+  tx.objectStore(storeName).put({ ...data, synced: false });
+};
+
+const getUnsyncedRecords = async () => {
+  const db = await openDB();
+  const tx = db.transaction(storeName, "readonly");
+  const store = tx.objectStore(storeName);
+  return new Promise((resolve) => {
+    const records = [];
+    const cursor = store.openCursor();
+    cursor.onsuccess = (e) => {
+      const cur = e.target.result;
+      if (cur) {
+        if (!cur.value.synced) records.push(cur.value);
+        cur.continue();
+      } else {
+        resolve(records);
+      }
+    };
+  });
+};
+
+const markAsSynced = async (id) => {
+  if (!id) {
+    console.error("❗ markAsSynced aborted — missing ID");
+    return;
+  }
+
+  console.log("📌 Syncing record with ID:", id);
+
+  const db = await openDB();
+  const tx = db.transaction(storeName, "readwrite");
+  const store = tx.objectStore(storeName);
+
+  try {
+    const record = await store.get(id);
+
+    if (record) {
+      store.put({ ...record, synced: true });
+      console.log("✅ Marked record as synced:", id);
+    } else {
+      console.warn("⚠️ No record found for ID:", id);
+    }
+  } catch (err) {
+    console.error("❌ Error during markAsSynced:", err);
+  }
+};
 function ChildForm() {
   const [language, setLanguage] = useState("en");
   const [photoCaptured, setPhotoCaptured] = useState(false);
@@ -65,18 +132,46 @@ function ChildForm() {
   }, [formData]);
 
   useEffect(() => {
-    const updateStatus = () => {
-      setIsOnline(navigator.onLine);
-      getGeoLocation();
-    };
-    window.addEventListener("online", updateStatus);
-    window.addEventListener("offline", updateStatus);
+  const updateStatus = () => {
+  setIsOnline(navigator.onLine);
+  console.log("🌐 Network status updated:", navigator.onLine);
+
     getGeoLocation();
-    return () => {
-      window.removeEventListener("online", updateStatus);
-      window.removeEventListener("offline", updateStatus);
-    };
-  }, []);
+    if (navigator.onLine) syncOfflineData(); // 🔁 Sync when back online
+  };
+
+  const syncOfflineData = async () => {
+    const unsynced = await getUnsyncedRecords();
+    for (const record of unsynced) {
+      try {
+        const response = await fetch("http://localhost:5000/child", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(record),
+        });
+
+        if (response.ok) {
+          console.log("🔁 Synced to MongoDB:", record.id);
+          await markAsSynced(record.id);
+        } else {
+          console.warn("⚠️ Sync failed for:", record.id);
+        }
+      } catch (err) {
+        console.error("❌ Sync error:", err);
+      }
+    }
+  };
+
+  window.addEventListener("online", updateStatus);
+  window.addEventListener("offline", updateStatus);
+  getGeoLocation();
+  syncOfflineData(); // 🔁 Sync on initial mount
+
+  return () => {
+    window.removeEventListener("online", updateStatus);
+    window.removeEventListener("offline", updateStatus);
+  };
+}, []);
 
   const getGeoLocation = () => {
     if (!navigator.geolocation)
@@ -168,43 +263,66 @@ function ChildForm() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.consent) {
-      setShowAlert(true);
+  e.preventDefault();
+
+  if (!formData.consent) {
+    setShowAlert(true);
+    return;
+  }
+
+  setShowAlert(false);
+  console.log("🌐 isOnline:", isOnline);
+
+  // Ensure a valid ID for IndexedDB
+  const childId = formData.id?.trim() || "CHILD_" + Date.now();
+
+  const payload = {
+    child_id: childId,
+    name: formData.name,
+    dateOfBirth: formData.dob,
+    age: Number(formData.age || 0),
+    gender: formData.gender,
+    guardian: formData.guardian,
+    weight: Number(formData.weight || 0),
+    height: Number(formData.height || 0),
+    illnesses: formData.illnesses,
+    malnutrition: formData.malnutrition,
+    photo: formData.photo,
+    consent: formData.consent,
+    geo: { city: location.city, country: location.country },
+  };
+
+  try {
+    if (!isOnline) {
+      console.log("📦 Attempting to save offline:", payload);
+
+      // Save to IndexedDB with required 'id' field
+      await saveToIndexedDB({ id: childId, ...payload });
+
+      console.log("📦 Saved offline in IndexedDB:", childId);
+      setShowSuccess(true);
       return;
     }
-    setShowAlert(false);
 
-    try {
-      const response = await fetch("http://localhost:5000/child", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          child_id: formData.id,
-          name: formData.name,
-          dateOfBirth: formData.dob,
-          age: Number(formData.age || 0),
-          gender: formData.gender,
-          guardian: formData.guardian,
-          weight: Number(formData.weight || 0),
-          height: Number(formData.height || 0),
-          illnesses: formData.illnesses,
-          malnutrition: formData.malnutrition,
-          photo: formData.photo,
-          consent: formData.consent,
-          geo: { city: location.city, country: location.country },
-        }),
-      });
+    const response = await fetch("http://localhost:5000/child", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-      if (!response.ok) throw new Error("Failed to save record to cloud");
+    if (!response.ok) throw new Error("Failed to save record to cloud");
 
-      console.log("Saved to cloud:", formData);
-      setShowSuccess(true);
-    } catch (error) {
-      console.error("❌ Cloud Save Error:", error);
-      setShowDuplicate(true);
-    }
-  };
+    console.log("✅ Saved to MongoDB:", payload);
+
+    // Mark as synced in IndexedDB
+    await markAsSynced(childId);
+
+    setShowSuccess(true);
+  } catch (error) {
+    console.error("❌ Save Error:", error);
+    setShowDuplicate(true);
+  }
+};
 
   const openCamera = async () => {
     setShowCamera(true);

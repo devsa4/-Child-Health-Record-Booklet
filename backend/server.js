@@ -151,22 +151,55 @@ app.get("/child-by-unique-id/:uniqueId", async (req, res) => {
   }
 });
 
-// ✅ Add new record to a child's history
+// ✅ Add health record to existing child
 app.put("/add-record/:childId", async (req, res) => {
   try {
     const { childId } = req.params;
     const record = req.body;
 
+    console.log("📥 Incoming record:", record);
+    console.log("🔍 Looking for child:", childId);
+
     const child = await Child.findOne({ child_id: childId });
-    if (!child) return res.status(404).json({ message: "Child not found" });
+    if (!child) {
+      console.warn("⚠️ No child found for ID:", childId);
+      return res.status(404).json({ message: "Child not found" });
+    }
 
     child.history.push(record);
     await child.save();
 
+    console.log("✅ Record added to child:", child.child_id);
     res.json(child);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to add record" });
+    console.error("❌ Error in /add-record:", err);
+    res.status(500).json({ message: "Failed to add record", error: err.message });
+  }
+});
+
+// ✅ Add new record to a child's history with logging
+app.put("/add-record/:childId", async (req, res) => {
+  try {
+    const { childId } = req.params;
+    const record = req.body;
+
+    console.log("📥 Incoming record:", record);
+    console.log("🔍 Looking for child:", childId);
+
+    const child = await Child.findOne({ child_id: childId });
+    if (!child) {
+      console.warn("⚠️ No child found for ID:", childId);
+      return res.status(404).json({ message: "Child not found" });
+    }
+
+    child.history.push(record);
+    await child.save();
+
+    console.log("✅ Record added to child:", child.child_id);
+    res.json(child);
+  } catch (err) {
+    console.error("❌ Error in /add-record:", err);
+    res.status(500).json({ message: "Failed to add record", error: err.message });
   }
 });
 

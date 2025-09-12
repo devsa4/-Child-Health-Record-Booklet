@@ -34,6 +34,11 @@ const openDB = () =>
   });
 
 const saveToIndexedDB = async (data) => {
+  if (!data.id) {
+    console.error("❌ IndexedDB save failed — missing ID:", data);
+    return;
+  }
+
   const db = await openDB();
   const tx = db.transaction(storeName, "readwrite");
   tx.objectStore(storeName).put({ ...data, synced: false });
@@ -48,10 +53,21 @@ const markAsSynced = async (id) => {
   const db = await openDB();
   const tx = db.transaction(storeName, "readwrite");
   const store = tx.objectStore(storeName);
-  const record = await store.get(id);
-  if (record) {
-    store.put({ ...record, synced: true });
-  }
+
+  const getRequest = store.get(id);
+  getRequest.onsuccess = () => {
+    const record = getRequest.result;
+    if (record && record.id) {
+      store.put({ ...record, synced: true });
+      console.log("✅ Marked as synced:", record.id);
+    } else {
+      console.warn("⚠️ No record found or missing ID:", record);
+    }
+  };
+
+  getRequest.onerror = () => {
+    console.error("❌ Failed to retrieve record for syncing:", id);
+  };
 };
 
 function AddRecordPage() {
@@ -203,15 +219,18 @@ function AddRecordPage() {
     return;
   }
 
-  const recordId = "RECORD_" + Date.now(); // Unique ID for IndexedDB
+  const recordId = "RECORD_" + Date.now();
   const newRecord = {
     id: recordId,
     height: parseFloat(height),
     weight: parseFloat(weight),
     illnesses,
-    malnutrition,
+    malnutrition: `${malnutrition.hasSigns} ${malnutrition.details}`.trim(),
     date: new Date().toISOString()
   };
+
+  console.log("🧪 Final record:", newRecord);
+  console.log("🧠 Syncing to:", `/add-record/${childData.child_id || childData._id}`);
 
   try {
     if (!navigator.onLine) {

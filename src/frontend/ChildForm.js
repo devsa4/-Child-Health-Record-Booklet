@@ -76,19 +76,33 @@ const markAsSynced = async (id) => {
   const tx = db.transaction(storeName, "readwrite");
   const store = tx.objectStore(storeName);
 
-  try {
-    const record = await store.get(id);
+  const request = store.get(id);
 
-    if (record) {
-      store.put({ ...record, synced: true });
-      console.log("✅ Marked record as synced:", id);
-    } else {
-      console.warn("⚠️ No record found for ID:", id);
+  request.onsuccess = () => {
+    const record = request.result;
+    console.log("🔍 Retrieved record:", record);
+
+    if (!record || !record.id) {
+      console.error("❌ Cannot mark as synced — missing ID in record:", record);
+      return;
     }
-  } catch (err) {
-    console.error("❌ Error during markAsSynced:", err);
-  }
+
+    const updateRequest = store.put({ ...record, synced: true });
+
+    updateRequest.onsuccess = () => {
+      console.log("✅ Marked record as synced:", record.id);
+    };
+
+    updateRequest.onerror = () => {
+      console.error("❌ Failed to update record:", updateRequest.error);
+    };
+  };
+
+  request.onerror = () => {
+    console.error("❌ Failed to retrieve record:", request.error);
+  };
 };
+window.markAsSynced = markAsSynced;
 function ChildForm() {
   const [language, setLanguage] = useState("en");
   const [photoCaptured, setPhotoCaptured] = useState(false);
@@ -274,8 +288,8 @@ function ChildForm() {
   console.log("🌐 isOnline:", isOnline);
 
   // Ensure a valid ID for IndexedDB
-  const childId = formData.id?.trim() || "CHILD_" + Date.now();
 
+  const childId = formData.id?.trim() || "CHILD_" + Date.now();
   const payload = {
     child_id: childId,
     name: formData.name,
@@ -286,7 +300,7 @@ function ChildForm() {
     weight: Number(formData.weight || 0),
     height: Number(formData.height || 0),
     illnesses: formData.illnesses,
-    malnutrition: formData.malnutrition,
+    malnutrition: `${formData.malnutrition.hasSigns} ${formData.malnutrition.details}`.trim(),
     photo: formData.photo,
     consent: formData.consent,
     geo: { city: location.city, country: location.country },
@@ -297,22 +311,25 @@ function ChildForm() {
       console.log("📦 Attempting to save offline:", payload);
 
       // Save to IndexedDB with required 'id' field
-      await saveToIndexedDB({ id: childId, ...payload });
-
+      const offlineRecord = { id: childId, ...payload };
+      console.log("🧪 Record going into IndexedDB:", offlineRecord);
+    await saveToIndexedDB(offlineRecord);
       console.log("📦 Saved offline in IndexedDB:", childId);
       setShowSuccess(true);
       return;
     }
-
+    console.log("📡 Sending to /child with payload:", payload);
     const response = await fetch("http://localhost:5000/child", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    console.log("🌐 Response status:", response.status);
 
     if (!response.ok) throw new Error("Failed to save record to cloud");
 
-    console.log("✅ Saved to MongoDB:", payload);
+    const result = await response.json();
+    console.log("✅ Saved to MongoDB:", result.record || payload);
 
     // Mark as synced in IndexedDB
     await markAsSynced(childId);

@@ -1152,21 +1152,3 @@ select:focus {
 @keyframes fill {
   100% { box-shadow: inset 0px 0px 0px 40px #009dff; }
 }
-.offline-saved-btn {
-  background-color: #28a745;
-  color: white;
-  border: none;
-  font-size: 1rem;
-  font-weight: 500;
-  padding: 10px 20px;
-  border-radius: 5px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  margin-top: 10px;
-  transition: transform 0.2s, background-color 0.2s;
-  width: 100%;
-}
-
-.offline-saved-btn:hover {
-  background-color: #218838;
-  transform: translateY(-2px);
-}

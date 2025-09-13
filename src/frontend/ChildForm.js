@@ -115,6 +115,7 @@ function ChildForm() {
   const [showDuplicate, setShowDuplicate] = useState(false);
   const [showSizeError, setShowSizeError] = useState(false); // New state for size error
   const [showFloatingSave, setShowFloatingSave] = useState(false);
+  const [showOfflineSavedMessage, setShowOfflineSavedMessage] = useState(false);
 
   const navigate = useNavigate();
 
@@ -146,46 +147,46 @@ function ChildForm() {
   }, [formData]);
 
   useEffect(() => {
-  const updateStatus = () => {
-  setIsOnline(navigator.onLine);
-  console.log("🌐 Network status updated:", navigator.onLine);
+    const updateStatus = () => {
+      setIsOnline(navigator.onLine);
+      console.log("🌐 Network status updated:", navigator.onLine);
 
-    getGeoLocation();
-    if (navigator.onLine) syncOfflineData(); // 🔁 Sync when back online
-  };
+      getGeoLocation();
+      if (navigator.onLine) syncOfflineData(); // 🔁 Sync when back online
+    };
 
-  const syncOfflineData = async () => {
-    const unsynced = await getUnsyncedRecords();
-    for (const record of unsynced) {
-      try {
-        const response = await fetch("http://localhost:5000/child", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(record),
-        });
+    const syncOfflineData = async () => {
+      const unsynced = await getUnsyncedRecords();
+      for (const record of unsynced) {
+        try {
+          const response = await fetch("http://localhost:5000/child", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(record),
+          });
 
-        if (response.ok) {
-          console.log("🔁 Synced to MongoDB:", record.id);
-          await markAsSynced(record.id);
-        } else {
-          console.warn("⚠️ Sync failed for:", record.id);
+          if (response.ok) {
+            console.log("🔁 Synced to MongoDB:", record.id);
+            await markAsSynced(record.id);
+          } else {
+            console.warn("⚠️ Sync failed for:", record.id);
+          }
+        } catch (err) {
+          console.error("❌ Sync error:", err);
         }
-      } catch (err) {
-        console.error("❌ Sync error:", err);
       }
-    }
-  };
+    };
 
-  window.addEventListener("online", updateStatus);
-  window.addEventListener("offline", updateStatus);
-  getGeoLocation();
-  syncOfflineData(); // 🔁 Sync on initial mount
+    window.addEventListener("online", updateStatus);
+    window.addEventListener("offline", updateStatus);
+    getGeoLocation();
+    syncOfflineData(); // 🔁 Sync on initial mount
 
-  return () => {
-    window.removeEventListener("online", updateStatus);
-    window.removeEventListener("offline", updateStatus);
-  };
-}, []);
+    return () => {
+      window.removeEventListener("online", updateStatus);
+      window.removeEventListener("offline", updateStatus);
+    };
+  }, []);
 
   const getGeoLocation = () => {
     if (!navigator.geolocation)
@@ -277,69 +278,66 @@ function ChildForm() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!formData.consent) {
-    setShowAlert(true);
-    return;
-  }
-
-  setShowAlert(false);
-  console.log("🌐 isOnline:", isOnline);
-
-  // Ensure a valid ID for IndexedDB
-
-  const childId = formData.id?.trim() || "CHILD_" + Date.now();
-  const payload = {
-    child_id: childId,
-    name: formData.name,
-    dateOfBirth: formData.dob,
-    age: Number(formData.age || 0),
-    gender: formData.gender,
-    guardian: formData.guardian,
-    weight: Number(formData.weight || 0),
-    height: Number(formData.height || 0),
-    illnesses: formData.illnesses,
-    malnutrition: `${formData.malnutrition.hasSigns} ${formData.malnutrition.details}`.trim(),
-    photo: formData.photo,
-    consent: formData.consent,
-    geo: { city: location.city, country: location.country },
-  };
-
-  try {
-    if (!isOnline) {
-      console.log("📦 Attempting to save offline:", payload);
-
-      // Save to IndexedDB with required 'id' field
-      const offlineRecord = { id: childId, ...payload };
-      console.log("🧪 Record going into IndexedDB:", offlineRecord);
-    await saveToIndexedDB(offlineRecord);
-      console.log("📦 Saved offline in IndexedDB:", childId);
-      setShowSuccess(true);
+    if (!formData.consent) {
+      setShowAlert(true);
       return;
     }
-    console.log("📡 Sending to /child with payload:", payload);
-    const response = await fetch("http://localhost:5000/child", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    console.log("🌐 Response status:", response.status);
 
-    if (!response.ok) throw new Error("Failed to save record to cloud");
+    setShowAlert(false);
+    console.log("🌐 isOnline:", isOnline);
 
-    const result = await response.json();
-    console.log("✅ Saved to MongoDB:", result.record || payload);
+    const childId = formData.id?.trim() || "CHILD_" + Date.now();
+    const payload = {
+      child_id: childId,
+      name: formData.name,
+      dateOfBirth: formData.dob,
+      age: Number(formData.age || 0),
+      gender: formData.gender,
+      guardian: formData.guardian,
+      weight: Number(formData.weight || 0),
+      height: Number(formData.height || 0),
+      illnesses: formData.illnesses,
+      malnutrition: `${formData.malnutrition.hasSigns} ${formData.malnutrition.details}`.trim(),
+      photo: formData.photo,
+      consent: formData.consent,
+      geo: { city: location.city, country: location.country },
+    };
 
-    // Mark as synced in IndexedDB
-    await markAsSynced(childId);
+    try {
+      if (!isOnline) {
+        console.log("📦 Attempting to save offline:", payload);
+        const offlineRecord = { id: childId, ...payload };
+        console.log("🧪 Record going into IndexedDB:", offlineRecord);
+        await saveToIndexedDB(offlineRecord);
+        console.log("📦 Saved offline in IndexedDB:", childId);
+        setShowSuccess(true);
+        setShowOfflineSavedMessage(true); // ✅ New: Show the message for offline save
+        return;
+      }
+      console.log("📡 Sending to /child with payload:", payload);
+      const response = await fetch("http://localhost:5000/child", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      console.log("🌐 Response status:", response.status);
 
-    setShowSuccess(true);
-  } catch (error) {
-    console.error("❌ Save Error:", error);
-    setShowDuplicate(true);
-  }
-};
+      if (!response.ok) throw new Error("Failed to save record to cloud");
+
+      const result = await response.json();
+      console.log("✅ Saved to MongoDB:", result.record || payload);
+
+      await markAsSynced(childId);
+
+      setShowSuccess(true);
+      setShowOfflineSavedMessage(false); // ✅ New: Hide the message for online save
+    } catch (error) {
+      console.error("❌ Save Error:", error);
+      setShowDuplicate(true);
+    }
+  };
 
   const openCamera = async () => {
     setShowCamera(true);
@@ -480,32 +478,66 @@ function ChildForm() {
         <source src="/backgroundChildForm.mp4" type="video/mp4" />
       </video>
       <div className="background-overlay"></div>
-{sidebarOpen && (
-  <div
-    className="sidebar-backdrop"
-    onClick={() => setSidebarOpen(false)}
-  />
-)}
+      {sidebarOpen && (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-<div ref={sidebarRef} className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-  <ul className="sidebar-links">
-    <li onClick={() => { navigate("/home"); setSidebarOpen(false); }}>{content[language].home}</li>
-    <li onClick={() => { navigate("/register"); setSidebarOpen(false); }}>{content[language].register}</li>
-    <li onClick={() => { navigate("/add-record/:childId"); setSidebarOpen(false); }}>{content[language].update}</li>
-    <li onClick={() => { navigate("/view-records"); setSidebarOpen(false); }}>{content[language].view}</li>
-    <li onClick={() => { navigate("/profile"); setSidebarOpen(false); }}>{content[language].profile}</li>
-  </ul>
-  <button
-    className="logout-button"
-    onClick={() => {
-      navigate('/login');
-      setSidebarOpen(false);
-    }}
-  >
-    {content[language].logout}
-  </button>
-</div>
-
+      <div ref={sidebarRef} className={`sidebar ${sidebarOpen ? "open" : ""}`}>
+        <ul className="sidebar-links">
+          <li
+            onClick={() => {
+              navigate("/home");
+              setSidebarOpen(false);
+            }}
+          >
+            {content[language].home}
+          </li>
+          <li
+            onClick={() => {
+              navigate("/register");
+              setSidebarOpen(false);
+            }}
+          >
+            {content[language].register}
+          </li>
+          <li
+            onClick={() => {
+              navigate("/add-record/:childId");
+              setSidebarOpen(false);
+            }}
+          >
+            {content[language].update}
+          </li>
+          <li
+            onClick={() => {
+              navigate("/view-records");
+              setSidebarOpen(false);
+            }}
+          >
+            {content[language].view}
+          </li>
+          <li
+            onClick={() => {
+              navigate("/profile");
+              setSidebarOpen(false);
+            }}
+          >
+            {content[language].profile}
+          </li>
+        </ul>
+        <button
+          className="logout-button"
+          onClick={() => {
+            navigate("/login");
+            setSidebarOpen(false);
+          }}
+        >
+          {content[language].logout}
+        </button>
+      </div>
 
       <div className="top-left-brand">
         <MdFamilyRestroom className="brand-icon" />
@@ -737,6 +769,12 @@ function ChildForm() {
             <Button type="submit" className="save-record-btn">
               <FaSave className="save-icon" /> {content[language].srec}
             </Button>
+            {/* ✅ This is the new button that will appear after an offline save */}
+            {showOfflineSavedMessage && !isOnline && (
+              <Button variant="success" className="offline-saved-btn">
+                Data is saved locally. It will be synced when you are back online.
+              </Button>
+            )}
           </div>
         </Form>
       </div>

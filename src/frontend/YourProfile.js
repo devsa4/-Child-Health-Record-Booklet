@@ -32,7 +32,7 @@ function YourProfile() {
     };
 
     fetchProfile();
-  }, []);
+  }, [navigate]);
 
   const handleLogout = () => {
     console.log('User logged out');

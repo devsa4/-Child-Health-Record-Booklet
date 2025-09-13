@@ -67,7 +67,11 @@ function SignUpForm() {
     if (navigator.onLine) {
       try {
         // ONLINE → Save to backend
-        await axios.post("http://localhost:5000/signup", user);
+        const response = await axios.post("http://localhost:5000/signup", user);
+// Save the returned userId in localStorage
+localStorage.setItem("loggedInUserId", response.data.userId);
+navigate("/home");
+
         navigate("/home");
       } catch (err) {
         console.warn("⚠️ Online save failed, falling back to IndexedDB:", err);

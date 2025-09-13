@@ -40,14 +40,18 @@ app.post('/signup', async (req, res) => {
   if (!fullName || !email || !password || isAdult === undefined || !nationalId) {
     return res.status(400).json({ message: 'All fields are required' });
   }
-  try {
-    const newUser = new User({ fullName, email, password, isAdult, nationalId });
-    await newUser.save();
-    res.status(201).json({ message: 'User created successfully' });
-  } catch (err) {
-    console.error('❌ Signup error:', err);
-    res.status(500).json({ message: 'Server Error', error: err });
-  }
+ try {
+  const newUser = new User({ fullName, email, password, isAdult, nationalId });
+  await newUser.save();
+  // ✅ return the created user's ID
+  res.status(201).json({ 
+    message: 'User created successfully', 
+    userId: newUser._id  
+  });
+} catch (err) {
+  console.error('❌ Signup error:', err);
+  res.status(500).json({ message: 'Server Error', error: err });
+}
 });
 
 // ✅ Login route
@@ -67,7 +71,20 @@ app.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Server Error', error: err });
   }
 });
-
+// ✅ Get user profile by MongoDB _id
+app.get('/user/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).lean();
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const { password, ...safeUser } = user;  // password hide
+    res.json(safeUser);
+  } catch (err) {
+    console.error('❌ Fetch user error:', err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
 // ✅ Sync users from IndexedDB
 app.post('/sync-users', async (req, res) => {
   console.log("📡 Received POST /sync-users");
@@ -230,7 +247,6 @@ app.post("/sync-users-children", async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
-
 // ✅ Health check
 app.get('/ping', (req, res) => res.send('pong'));
 

@@ -14,7 +14,12 @@ function YourProfile() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch('http://localhost:5000/user-profile/68bd522d50acbf90b1bdfb34');
+        const userId = localStorage.getItem("loggedInUserId");
+      if (!userId) {
+        navigate('/login');
+        return;
+      }
+        const res = await fetch(`http://localhost:5000/user/${userId}`);
         if (!res.ok) throw new Error('Failed to fetch');
         const data = await res.json();
         console.log("Fetched profile:", data);

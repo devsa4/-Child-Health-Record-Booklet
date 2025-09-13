@@ -16,33 +16,37 @@ function LoginForm() {
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (navigator.onLine) {
-      syncUsers();
-    }
-    if (!nationalId || !password) {
-      setErrorMessage('Please enter both National ID and password.');
-      return;
-    }
+  if (navigator.onLine) {
+    syncUsers();
+  }
+  if (!nationalId || !password) {
+    setErrorMessage('Please enter both National ID and password.');
+    return;
+  }
 
-    try {
-      const res = await axios.post('http://localhost:5000/login', {
-        nationalId: nationalId.trim(),
-        password: password.trim(),
-      });
+  try {
+    const res = await axios.post('http://localhost:5000/login', {
+      nationalId: nationalId.trim(),
+      password: password.trim(),
+    });
 
-      console.log('Logged in user:', res.data.user);
+    console.log('Logged in user:', res.data.user);
 
-      setNationalId('');
-      setPassword('');
-      setErrorMessage('');
-      navigate('/home');
-    } catch (err) {
-      console.error('Login error:', err.response || err);
-      setErrorMessage(err.response?.data?.message || 'Invalid National ID or Password.');
-    }
-  };
+    // ✅ yaha add karo
+    localStorage.setItem("loggedInUserId", res.data.user._id);
+
+    setNationalId('');
+    setPassword('');
+    setErrorMessage('');
+    navigate('/home'); 
+  } catch (err) {
+    console.error('Login error:', err.response || err);
+    setErrorMessage(err.response?.data?.message || 'Invalid National ID or Password.');
+  }
+};
+
 
   return (
     <>

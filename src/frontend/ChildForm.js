@@ -300,7 +300,10 @@ function ChildForm() {
     weight: Number(formData.weight || 0),
     height: Number(formData.height || 0),
     illnesses: formData.illnesses,
-    malnutrition: `${formData.malnutrition.hasSigns} ${formData.malnutrition.details}`.trim(),
+   malnutrition: {
+    hasSigns: formData.malnutrition.hasSigns || "",
+    details: formData.malnutrition.details || ""
+  },
     photo: formData.photo,
     consent: formData.consent,
     geo: { city: location.city, country: location.country },

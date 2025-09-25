@@ -174,7 +174,7 @@ useEffect(() => {
             weight: "Weight",
             height: "Height",
             illness: "Recent Illness",
-            malnutrition: "Signs of Malnutrition",
+            malnutrition: "Visible Signs of Malnutrition",
             healthy: "Healthy",
             improving: "Improving",
             attention: "Needs Attention",
@@ -219,7 +219,7 @@ useEffect(() => {
             weight: "वज़न",
             height: "कद",
             illness: "हाल की बीमारी",
-            malnutrition: "कुपोषण के संकेत",
+            malnutrition: "कुपोषण के दृश्य संकेत",
             healthy: "स्वस्थ",
             improving: "सुधार हो रहा है",
             attention: "ध्यान देने की आवश्यकता",
@@ -362,13 +362,25 @@ useEffect(() => {
     };
     const cancelDelete = () => setShowDeleteConfirm(false);
 
-    const getProgressStatusKey = () => {
-        if (child.malnutrition?.hasSigns === "yes") return "attention";
-        const avgWeight = 10 + child.age * 2;
-        const avgHeight = 70 + child.age * 7;
-        if (child.weight >= avgWeight && child.height >= avgHeight) return "healthy";
-        return "improving";
-    };
+  const getProgressStatusKey = () => {
+  const avgWeight = 10 + child.age * 2;
+  const avgHeight = 70 + child.age * 7;
+
+  // If malnutrition signs present → Attention
+  if (child.malnutrition?.hasSigns === "yes") return "attention";
+
+  // If no illness & no malnutrition → Healthy
+  if ((!child.illnesses || child.illnesses.toLowerCase() === "N/A"||child.illnesses.toLowerCase() === "Skip") &&
+      (!child.malnutrition || child.malnutrition.hasSigns !== "yes")) {
+    return "healthy";
+  }
+
+  // Otherwise check growth progress
+  if (child.weight >= avgWeight && child.height >= avgHeight) return "healthy";
+
+  return "improving";
+};
+
     const progressStatusKey = getProgressStatusKey();
 
     // New function for actionable recommendations, including encouragement messages
@@ -534,9 +546,21 @@ ${recsHi}
                     <p><strong>{t.weight}:</strong> <span className="field-value">{child.weight} kg</span></p>
                     <p><strong>{t.height}:</strong> <span className="field-value">{child.height} cm</span></p>
                     <p><strong>{t.illness}:</strong> <span className="field-value">{child.illnesses || "None"}</span></p>
-                    <p><strong>{t.malnutrition}:</strong> <span className="field-value">
-                        {child.malnutrition?.hasSigns === "yes" ? child.malnutrition.details : "No"}
-                    </span></p>
+                   {(() => {
+  const hasMalnutrition =
+    child.malnutrition?.hasSigns &&
+    String(child.malnutrition.hasSigns).toLowerCase() === "yes";
+
+  return (
+    <p>
+      <strong>{t.malnutrition}:</strong>
+      <span className="field-value">
+        {hasMalnutrition ? child.malnutrition.details : "No"}
+      </span>
+    </p>
+  );
+})()}
+
                 </div>
 <div className="share-buttons" style={{ position: "relative", display: "inline-block" }}>
   <button

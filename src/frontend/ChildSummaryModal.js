@@ -177,6 +177,7 @@ useEffect(() => {
             malnutrition: "Visible Signs of Malnutrition",
             healthy: "Healthy",
             improving: "Improving",
+           
             attention: "Needs Attention",
             healthyMessage: "✅ Your child’s growth is on track. Keep it up!",
             alertMessage: "⚠️ Please consult a health professional for guidance.",
@@ -188,6 +189,13 @@ useEffect(() => {
             futureGrowth: "Future Growth: Together, we build a healthier future. 🌱",
             guardianName: "Parents/Guardian’s Name",
             whatsapp: "Send On WhatsApp",
+            tips: " 🍎 See Nutrition Tips",
+            green: "🥦 Add more green vegetables to meals.",
+      milk: "🥛 Ensure at least 2 glasses of milk per day.",
+      vitamin: "🍊 Include vitamin-rich fruits like oranges & papaya.",
+      protein: "🥚 Add protein sources: eggs, beans, pulses.",
+      hydrate: "💧 Keep your child hydrated throughout the day.",
+      nutritiontips: "Nutrition Tips",
             updateTimeline: "Update Record to see the timeline of the progress.",
             chartSubtitle: "This chart tracks your child's growth over time.",
             recommendationsTitle: "Actionable Recommendations",
@@ -202,11 +210,19 @@ useEffect(() => {
             download: "रिकॉर्ड डाउनलोड करें",
             delete: "रिकॉर्ड हटाएँ",
             update: "रिकॉर्ड अपडेट करें",
+            nutritiontips: "पोषण सुझाव",
             confirmDelete: "क्या आप वाकई इस बच्चे का रिकॉर्ड हटाना चाहते हैं? यह कार्रवाई पूर्ववत नहीं की जा सकती।",
             enterId: "अद्वितीय आईडी दर्ज करें",
             promptId: "रिकॉर्ड डाउनलोड करने के लिए अद्वितीय आईडी दर्ज करें।",
-            invalidId: "अमान्य अद्वितीय आईडी।",
+           
             close: "बंद करें",
+            tips: " 🍎 पोषण सुझाव देखें",
+            green: "🥦 भोजन में अधिक हरी सब्जियाँ शामिल करें।",
+            milk: "🥛 दिन में कम से कम 2 गिलास दूध सुनिश्चित करें।",
+            vitamin: "🍊 संतरे और पपीता जैसे विटामिन युक्त फल शामिल करें।",
+            protein: "🥚 प्रोटीन स्रोत जोड़ें: अंडे, बीन्स, दालें।",
+            hydrate: "💧 पूरे दिन अपने बच्चे को हाइड्रेटेड रखें।",
+            invalidId: "अमान्य अद्वितीय आईडी।",
             yes: "हाँ",
             whatsapp: "व्हाट्सएप पर भेजें",
             updateTimelie: "प्रगति की समयरेखा देखने के लिए रिकॉर्ड अपडेट करें।",
@@ -696,24 +712,24 @@ ${recsHi}
     className="nutrition-tips-btn"
     onClick={() => setShowNutritionTips(true)}
   >
-    🍎 See Nutrition Tips
+<h7>{t.tips}</h7>
   </button>
 </div>
 {showNutritionTips && (
   <div className="nutrition-tips-card">
-    <h4>Nutrition Tips</h4>
+    <h4>{t.nutritiontips}</h4>
     <ul>
-      <li>🥦 Add more green vegetables to meals.</li>
-      <li>🥛 Ensure at least 2 glasses of milk per day.</li>
-      <li>🍊 Include vitamin-rich fruits like oranges & papaya.</li>
-      <li>🥚 Add protein sources: eggs, beans, pulses.</li>
-      <li>💧 Keep your child hydrated throughout the day.</li>
+    <div>{t.green}</div>
+<div>{t.milk}</div>
+<div>{t.vitamin}</div>
+<div>{t.protein}</div>
+<div>{t.hydrate}</div>
     </ul>
     <button
       className="close-tips-btn"
       onClick={() => setShowNutritionTips(false)}
     >
-      Close
+      <div>{t.close}</div>
     </button>
   </div>
 )}

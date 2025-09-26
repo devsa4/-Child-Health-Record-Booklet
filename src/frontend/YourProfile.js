@@ -14,22 +14,33 @@ function YourProfile() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const userId = localStorage.getItem("loggedInUserId");
-      if (!userId) {
+        const token = localStorage.getItem("token");
+      if (!token) {
         navigate('/login');
         return;
       }
-        const res = await fetch(`http://localhost:5000/user/${userId}`);
-        if (!res.ok) throw new Error('Failed to fetch');
-        const data = await res.json();
-        console.log("Fetched profile:", data);
-        setProfile(data);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching profile:', err);
-        setLoading(false);
+        
+const res = await fetch(`http://localhost:5000/user/profile`, {
+   mode: "cors",
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
       }
-    };
+    });
+
+       
+if (!res.ok) throw new Error('Failed to fetch');
+    const data = await res.json();
+    console.log("Fetched profile:", data);
+    setProfile(data);
+    setLoading(false);
+  } catch (err) {
+    console.error('Error fetching profile:', err);
+    setLoading(false);
+  }
+};
+
 
     fetchProfile();
   }, [navigate]);

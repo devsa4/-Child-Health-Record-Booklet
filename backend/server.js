@@ -2,25 +2,31 @@ import dotenv from "dotenv";
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import verifyToken from "./middleware/auth.js";
 
 dotenv.config();
 const app = express();
 
 // ✅ CORS setup
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type']
-}));
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 // ✅ Increase JSON payload limit (important for Base64 photos)
 app.use(express.json({ limit: "3mb" }));
 app.use(express.urlencoded({ limit: "3mb", extended: true }));
 
 // ✅ Connect to MongoDB Atlas
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ MongoDB Connected'))
-  .catch((err) => console.error('❌ MongoDB connection error:', err));
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 // ===================
 // ✅ User schema
@@ -30,77 +36,129 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true },
   password: { type: String, required: true },
   isAdult: { type: Boolean, required: true },
-  nationalId: { type: String, required: true, unique: true }
+  nationalId: { type: String, required: true, unique: true },
 });
-const User = mongoose.model('User', userSchema, 'users');
+const User = mongoose.model("User", userSchema, "users");
 
 // ✅ Signup route
-app.post('/signup', async (req, res) => {
+app.post("/signup", async (req, res) => {
   const { fullName, email, password, isAdult, nationalId } = req.body;
-  if (!fullName || !email || !password || isAdult === undefined || !nationalId) {
-    return res.status(400).json({ message: 'All fields are required' });
+  if (
+    !fullName ||
+    !email ||
+    !password ||
+    isAdult === undefined ||
+    !nationalId
+  ) {
+    return res.status(400).json({ message: "All fields are required" });
   }
- try {
-  const newUser = new User({ fullName, email, password, isAdult, nationalId });
-  await newUser.save();
-  // ✅ return the created user's ID
-  res.status(201).json({ 
-    message: 'User created successfully', 
-    userId: newUser._id  
-  });
-} catch (err) {
-  console.error('❌ Signup error:', err);
-  res.status(500).json({ message: 'Server Error', error: err });
-}
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // ✅ Create and save the user
+    const newUser = new User({
+      fullName,
+      email,
+      password: hashedPassword,
+      isAdult,
+      nationalId,
+    });
+    await newUser.save();
+
+    // ✅ Generate JWT token
+    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    // ✅ Return token and user ID
+    res.status(201).json({
+      message: "User created successfully",
+      token,
+      userId: newUser._id,
+    });
+  } catch (err) {
+    console.error("❌ Signup error:", err);
+    res.status(500).json({ message: "Server Error", error: err });
+  }
 });
 
 // ✅ Login route
-app.post('/login', async (req, res) => {
+app.post("/login", async (req, res) => {
   const { nationalId, password } = req.body;
   if (!nationalId || !password) {
-    return res.status(400).json({ message: 'National ID and password are required' });
+    return res
+      .status(400)
+      .json({ message: "National ID and password are required" });
   }
   try {
     const user = await User.findOne({ nationalId });
-    if (!user || user.password !== password) {
-      return res.status(401).json({ message: 'Invalid National ID or password' });
+    if (!user) {
+      return res
+        .status(401)
+        .json({ message: "Invalid National ID or password" });
     }
-    res.status(200).json({ message: 'Login successful', user });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res
+        .status(401)
+        .json({ message: "Invalid National ID or password" });
+    }
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      userId: user._id,
+    });
   } catch (err) {
-    console.error('❌ Login error:', err);
-    res.status(500).json({ message: 'Server Error', error: err });
+    console.error("❌ Login error:", err);
+    res.status(500).json({ message: "Server Error", error: err });
   }
 });
 // ✅ Get user profile by MongoDB _id
-app.get('/user/:id', async (req, res) => {
+app.get("/user/profile", verifyToken, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).lean();
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    const userId = req.user?.userId;
+
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user ID in token" });
     }
-    const { password, ...safeUser } = user;  // password hide
+
+    const user = await User.findById(userId).lean();
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const { password, ...safeUser } = user;
     res.json(safeUser);
   } catch (err) {
-    console.error('❌ Fetch user error:', err);
-    res.status(500).json({ message: 'Server Error' });
+    console.error("❌ Profile fetch error:", err);
+    res.status(500).json({ message: "Server Error" });
   }
 });
+
+
 // ✅ Sync users from IndexedDB
-app.post('/sync-users', async (req, res) => {
+app.post("/sync-users", async (req, res) => {
   console.log("📡 Received POST /sync-users");
   const { users } = req.body;
 
   if (!Array.isArray(users) || users.length === 0) {
-    return res.status(400).json({ message: 'No users to sync' });
+    return res.status(400).json({ message: "No users to sync" });
   }
 
   try {
-    await User.insertMany(users, { ordered: false }); // skips duplicates
-    console.log("✅ Synced users:", users.map(u => u.nationalId));
+    
+    const hashedUsers = await Promise.all(users.map(async (user) => {
+      const hashedPassword = await bcrypt.hash(user.password, 10);
+      return { ...user, password: hashedPassword };
+    }));
+
+    await User.insertMany(hashedUsers, { ordered: false }); // skips duplicates
     res.status(200).json({ message: 'Users synced successfully' });
+
   } catch (err) {
-    console.error('❌ Sync error:', err);
-    res.status(500).json({ message: 'Sync failed', error: err });
+    console.error("❌ Sync error:", err);
+    res.status(500).json({ message: "Sync failed", error: err });
   }
 });
 
@@ -119,7 +177,7 @@ const childSchema = new mongoose.Schema({
   illnesses: { type: String },
   malnutrition: {
     hasSigns: { type: String, enum: ["yes", "no", ""], default: "" },
-    details: { type: String }
+    details: { type: String },
   },
   history: [
     {
@@ -128,13 +186,13 @@ const childSchema = new mongoose.Schema({
       weight: Number,
       illnesses: String,
       malnutrition: String,
-      date: Date
-    }
+      date: Date,
+    },
   ],
   photo: { type: String }, // Base64 photo
   consent: { type: Boolean, required: true },
   geo: { city: String, country: String },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
 });
 const Child = mongoose.model("Child", childSchema, "children");
 
@@ -190,7 +248,9 @@ app.put("/add-record/:childId", async (req, res) => {
     res.json(child);
   } catch (err) {
     console.error("❌ Error in /add-record:", err);
-    res.status(500).json({ message: "Failed to add record", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to add record", error: err.message });
   }
 });
 
@@ -216,7 +276,9 @@ app.put("/add-record/:childId", async (req, res) => {
     res.json(child);
   } catch (err) {
     console.error("❌ Error in /add-record:", err);
-    res.status(500).json({ message: "Failed to add record", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to add record", error: err.message });
   }
 });
 
@@ -227,7 +289,9 @@ app.delete("/child/:childId", async (req, res) => {
     const child = await Child.findOneAndDelete({ child_id: childId });
 
     if (!child) {
-      return res.status(200).json({ message: `Child ${childId} already deleted` });
+      return res
+        .status(200)
+        .json({ message: `Child ${childId} already deleted` });
     }
 
     res.status(200).json({ message: `Deleted child: ${childId}` });
@@ -248,7 +312,7 @@ app.post("/sync-users-children", async (req, res) => {
   }
 });
 // ✅ Health check
-app.get('/ping', (req, res) => res.send('pong'));
+app.get("/ping", (req, res) => res.send("pong"));
 
 // ✅ Start server
-app.listen(5000, () => console.log('🚀 Server running on port 5000'));
+app.listen(5000, () => console.log("🚀 Server running on port 5000"));

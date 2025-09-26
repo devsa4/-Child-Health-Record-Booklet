@@ -35,7 +35,8 @@ function LoginForm() {
     console.log('Logged in user:', res.data.user);
 
     // ✅ yaha add karo
-    localStorage.setItem("loggedInUserId", res.data.user._id);
+   localStorage.setItem("token", res.data.token);
+localStorage.setItem("loggedInUserId", res.data.userId)
 
     setNationalId('');
     setPassword('');

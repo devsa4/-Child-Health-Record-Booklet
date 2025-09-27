@@ -43,19 +43,11 @@ const User = mongoose.model("User", userSchema, "users");
 // ✅ Signup route
 app.post("/signup", async (req, res) => {
   const { fullName, email, password, isAdult, nationalId } = req.body;
-  if (
-    !fullName ||
-    !email ||
-    !password ||
-    isAdult === undefined ||
-    !nationalId
-  ) {
+  if (!fullName || !email || !password || isAdult === undefined || !nationalId) {
     return res.status(400).json({ message: "All fields are required" });
   }
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // ✅ Create and save the user
     const newUser = new User({
       fullName,
       email,
@@ -65,12 +57,10 @@ app.post("/signup", async (req, res) => {
     });
     await newUser.save();
 
-    // ✅ Generate JWT token
     const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
 
-    // ✅ Return token and user ID
     res.status(201).json({
       message: "User created successfully",
       token,
@@ -86,22 +76,16 @@ app.post("/signup", async (req, res) => {
 app.post("/login", async (req, res) => {
   const { nationalId, password } = req.body;
   if (!nationalId || !password) {
-    return res
-      .status(400)
-      .json({ message: "National ID and password are required" });
+    return res.status(400).json({ message: "National ID and password are required" });
   }
   try {
     const user = await User.findOne({ nationalId });
     if (!user) {
-      return res
-        .status(401)
-        .json({ message: "Invalid National ID or password" });
+      return res.status(401).json({ message: "Invalid National ID or password" });
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res
-        .status(401)
-        .json({ message: "Invalid National ID or password" });
+      return res.status(401).json({ message: "Invalid National ID or password" });
     }
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
@@ -116,11 +100,11 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ message: "Server Error", error: err });
   }
 });
+
 // ✅ Get user profile by MongoDB _id
 app.get("/user/profile", verifyToken, async (req, res) => {
   try {
     const userId = req.user?.userId;
-
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Invalid user ID in token" });
     }
@@ -136,7 +120,6 @@ app.get("/user/profile", verifyToken, async (req, res) => {
   }
 });
 
-
 // ✅ Sync users from IndexedDB
 app.post("/sync-users", async (req, res) => {
   console.log("📡 Received POST /sync-users");
@@ -147,15 +130,13 @@ app.post("/sync-users", async (req, res) => {
   }
 
   try {
-    
     const hashedUsers = await Promise.all(users.map(async (user) => {
       const hashedPassword = await bcrypt.hash(user.password, 10);
       return { ...user, password: hashedPassword };
     }));
 
     await User.insertMany(hashedUsers, { ordered: false }); // skips duplicates
-    res.status(200).json({ message: 'Users synced successfully' });
-
+    res.status(200).json({ message: "Users synced successfully" });
   } catch (err) {
     console.error("❌ Sync error:", err);
     res.status(500).json({ message: "Sync failed", error: err });
@@ -189,7 +170,7 @@ const childSchema = new mongoose.Schema({
       date: Date,
     },
   ],
-  photo: { type: String }, // Base64 photo
+  photo: { type: String },
   consent: { type: Boolean, required: true },
   geo: { city: String, country: String },
   createdAt: { type: Date, default: Date.now },
@@ -248,37 +229,7 @@ app.put("/add-record/:childId", async (req, res) => {
     res.json(child);
   } catch (err) {
     console.error("❌ Error in /add-record:", err);
-    res
-      .status(500)
-      .json({ message: "Failed to add record", error: err.message });
-  }
-});
-
-// ✅ Add new record to a child's history with logging
-app.put("/add-record/:childId", async (req, res) => {
-  try {
-    const { childId } = req.params;
-    const record = req.body;
-
-    console.log("📥 Incoming record:", record);
-    console.log("🔍 Looking for child:", childId);
-
-    const child = await Child.findOne({ child_id: childId });
-    if (!child) {
-      console.warn("⚠️ No child found for ID:", childId);
-      return res.status(404).json({ message: "Child not found" });
-    }
-
-    child.history.push(record);
-    await child.save();
-
-    console.log("✅ Record added to child:", child.child_id);
-    res.json(child);
-  } catch (err) {
-    console.error("❌ Error in /add-record:", err);
-    res
-      .status(500)
-      .json({ message: "Failed to add record", error: err.message });
+    res.status(500).json({ message: "Failed to add record", error: err.message });
   }
 });
 
@@ -289,9 +240,7 @@ app.delete("/child/:childId", async (req, res) => {
     const child = await Child.findOneAndDelete({ child_id: childId });
 
     if (!child) {
-      return res
-        .status(200)
-        .json({ message: `Child ${childId} already deleted` });
+      return res.status(200).json({ message: `Child ${childId} already deleted` });
     }
 
     res.status(200).json({ message: `Deleted child: ${childId}` });
@@ -301,14 +250,35 @@ app.delete("/child/:childId", async (req, res) => {
   }
 });
 
-// ✅ Sync-users alias for bulk insert
-app.post("/sync-users-children", async (req, res) => {
+// ✅ Sync children from IndexedDB
+app.post("/sync-children", async (req, res) => {
+  console.log("📡 Received POST /sync-children");
+  const { children } = req.body;
+
+  if (!Array.isArray(children) || children.length === 0) {
+    return res.status(400).json({ message: "No children to sync" });
+  }
+
   try {
-    const children = req.body;
-    const saved = await Child.insertMany(children, { ordered: false });
-    res.status(201).json({ message: "Children synced successfully", saved });
+    const results = [];
+
+    for (const child of children) {
+      const updated = await Child.updateOne(
+        { child_id: child.child_id },
+        { $set: child },
+        { upsert: true }
+      );
+      results.push({ child_id: child.child_id, status: updated });
+    }
+
+    res.status(200).json({
+      message: "Children synced successfully",
+      synced: results.length,
+      details: results,
+    });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("❌ Sync error:", err);
+    res.status(500).json({ message: "Sync failed", error: err.message });
   }
 });
 // ✅ Health check

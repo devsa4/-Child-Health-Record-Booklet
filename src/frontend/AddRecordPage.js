@@ -15,7 +15,7 @@ import { MdFamilyRestroom } from "react-icons/md";
 import { FaBars } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import "./AddRecordPage.css";
-
+import { addRecordToChild } from "../utils/indexeddb";
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 function AddRecordPage() {
@@ -217,52 +217,55 @@ function AddRecordPage() {
     }
   };
 
-  const handleAddRecord = async (e) => {
-    e.preventDefault();
+const handleAddRecord = async (e) => {
+  e.preventDefault();
 
-    if (!height || !weight) {
-      setPopupMessage("Height and Weight are required!");
+  if (!height || !weight) {
+    setPopupMessage("Height and Weight are required!");
+    setShowPopup(true);
+    return;
+  }
+
+  const recordId = "RECORD_" + Date.now();
+  const newRecord = {
+    id: recordId,
+    height: parseFloat(height),
+    weight: parseFloat(weight),
+    illnesses,
+    malnutrition: malnutrition.trim(),
+    date: new Date().toISOString(),
+    child_id: childData.child_id || childData._id,
+    synced: navigator.onLine
+  };
+
+  try {
+    if (!navigator.onLine) {
+      await addRecordToChild(newRecord.child_id, newRecord);
+      setRecords((prev) => [...prev, newRecord]); // update chart immediately
+      setHeight("");
+      setWeight("");
+      setIllnesses("");
+      setMalnutrition("");
+      setPopupMessage("Saved offline. Will sync when online.");
       setShowPopup(true);
       return;
     }
 
-    const recordId = "RECORD_" + Date.now();
-    const newRecord = {
-      id: recordId,
-      height: parseFloat(height),
-      weight: parseFloat(weight),
-      illnesses,
-      malnutrition: malnutrition.trim(),
-      date: new Date().toISOString(),
-      child_id: childData.child_id || childData._id,
-      synced: navigator.onLine
-    };
-
-    try {
-      if (!navigator.onLine) {
-        const offlineRecords = JSON.parse(localStorage.getItem("offlineRecords") || "[]");
-        offlineRecords.push(newRecord);
-        localStorage.setItem("offlineRecords", JSON.stringify(offlineRecords));
-        setPopupMessage("Saved offline. Will sync when online.");
-        setShowPopup(true);
-        return;
-      }
-
-      const res = await fetch(`/add-record/${newRecord.child_id}`, {
-        method: "PUT",
-             headers: { "Content-Type": "application/json" },
+    const res = await fetch(`/add-record/${newRecord.child_id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newRecord)
     });
 
     if (!res.ok) throw new Error("Failed to add record");
 
     const updatedChild = await res.json();
+    await addRecordToChild(newRecord.child_id, newRecord); // ✅ update IndexedDB too
     setRecords(updatedChild.history || []);
     setHeight("");
     setWeight("");
     setIllnesses("");
     setMalnutrition("");
-
     setPopupMessage("Record added successfully!");
     setShowPopup(true);
   } catch (err) {

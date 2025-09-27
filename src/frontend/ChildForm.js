@@ -194,24 +194,25 @@ function ChildForm() {
 
     setShowAlert(false);
     const childId = formData.id?.trim() || "CHILD_" + Date.now();
-    const payload = {
-      child_id: childId,
-      name: formData.name,
-      dateOfBirth: formData.dob,
-      age: Number(formData.age || 0),
-      gender: formData.gender,
-      guardian: formData.guardian,
-      weight: Number(formData.weight || 0),
-      height: Number(formData.height || 0),
-      illnesses: formData.illnesses,
-      malnutrition: {
-        hasSigns: formData.malnutrition.hasSigns || "",
-        details: formData.malnutrition.details || "",
-      },
-      photo: formData.photo,
-      consent: formData.consent,
-      geo: { city: location.city, country: location.country },
-    };
+const payload = {
+  child_id: childId,
+  name: formData.name,
+  dateOfBirth: formData.dob,
+  age: Number(formData.age || 0),
+  gender: formData.gender,
+  guardian: formData.guardian,
+  weight: Number(formData.weight || 0),
+  height: Number(formData.height || 0),
+  illnesses: formData.illnesses,
+  malnutrition: {
+    hasSigns: formData.malnutrition.hasSigns || "",
+    details: formData.malnutrition.details || "",
+  },
+  photo: formData.photo,
+  consent: formData.consent,
+  geo: { city: location.city, country: location.country },
+  history: [],
+};
 
     try {
       if (!isOnline) {

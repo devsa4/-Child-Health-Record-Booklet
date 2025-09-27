@@ -92,6 +92,7 @@ export const addChild = async (child) => {
     const childToSave = {
       ...child,
       child_id: child.child_id || child.id || child._id || "unknown_id",
+      synced: false // ✅ mark child as unsynced for offline tracking
     };
     await db.put("children", childToSave);
     console.log("💾 Child saved locally:", childToSave);
@@ -114,6 +115,31 @@ export const getChildById = async (childId) => {
   } catch (err) {
     console.error("❌ Failed to retrieve child:", err);
     return null;
+  }
+};
+
+// 📝 Add a new progress record to a child
+export const addRecordToChild = async (childId, newRecord) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction("children", "readwrite");
+    const store = tx.objectStore("children");
+
+    const normalizedId = String(childId).trim();
+    const child = await store.get(normalizedId);
+    if (!child) throw new Error("Child not found in IndexedDB");
+
+    const updatedHistory = Array.isArray(child.history)
+      ? [...child.history, newRecord]
+      : [newRecord];
+
+    const updatedChild = { ...child, history: updatedHistory };
+    await store.put(updatedChild);
+    await tx.done;
+
+    console.log("📈 Added record to child:", newRecord);
+  } catch (err) {
+    console.error("❌ Failed to add record to child:", err);
   }
 };
 
@@ -141,7 +167,7 @@ export const clearChildren = async () => {
   }
 };
 
-// 🔄 Optional: Sync children to backend
+// 🔄Sync children to backend
 export const syncChildren = async () => {
   if (!navigator.onLine) {
     console.log("📴 Offline — child sync skipped");
@@ -149,8 +175,10 @@ export const syncChildren = async () => {
   }
 
   const children = await getAllChildren();
-  if (children.length === 0) {
-    console.log("📭 No children to sync");
+  const unsynced = children.filter((c) => !c.synced);
+
+  if (unsynced.length === 0) {
+    console.log("📭 No unsynced children to sync");
     return;
   }
 
@@ -158,14 +186,20 @@ export const syncChildren = async () => {
     const response = await fetch("http://localhost:5000/sync-children", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ children }),
+      body: JSON.stringify({ children: unsynced }),
     });
 
     if (response.ok) {
-      await clearChildren();
-      console.log("✅ Synced children to MongoDB");
-    } else {
-      console.error("❌ Server error:", await response.text());
+      const db = await initDB();
+      const tx = db.transaction("children", "readwrite");
+      const store = tx.objectStore("children");
+
+      for (const child of unsynced) {
+        await store.put({ ...child, synced: true }); // ✅ mark as synced
+      }
+
+      await tx.done;
+      console.log("✅ Synced unsynced children to MongoDB");
     }
   } catch (err) {
     console.error("❌ Child sync failed:", err);

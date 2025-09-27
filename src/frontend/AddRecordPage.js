@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { addChild, getChildById } from "../utils/indexeddb";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -17,59 +18,6 @@ import "./AddRecordPage.css";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-const dbName = "AddRecordDB";
-const storeName = "records";
-
-const openDB = () =>
-  new Promise((resolve, reject) => {
-    const request = indexedDB.open(dbName, 1);
-    request.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains(storeName)) {
-        db.createObjectStore(storeName, { keyPath: "id" });
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject("Failed to open IndexedDB");
-  });
-
-const saveToIndexedDB = async (data) => {
-  if (!data.id) {
-    console.error("❌ IndexedDB save failed — missing ID:", data);
-    return;
-  }
-
-  const db = await openDB();
-  const tx = db.transaction(storeName, "readwrite");
-  tx.objectStore(storeName).put({ ...data, synced: false });
-};
-
-const markAsSynced = async (id) => {
-  if (!id) {
-    console.error("❗ markAsSynced aborted — missing ID");
-    return;
-  }
-
-  const db = await openDB();
-  const tx = db.transaction(storeName, "readwrite");
-  const store = tx.objectStore(storeName);
-
-  const getRequest = store.get(id);
-  getRequest.onsuccess = () => {
-    const record = getRequest.result;
-    if (record && record.id) {
-      store.put({ ...record, synced: true });
-      console.log("✅ Marked as synced:", record.id);
-    } else {
-      console.warn("⚠️ No record found or missing ID:", record);
-    }
-  };
-
-  getRequest.onerror = () => {
-    console.error("❌ Failed to retrieve record for syncing:", id);
-  };
-};
-
 function AddRecordPage() {
   const [language, setLanguage] = useState("en");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -80,7 +28,6 @@ function AddRecordPage() {
   const [illnesses, setIllnesses] = useState("");
   const [malnutrition, setMalnutrition] = useState("");
   const [records, setRecords] = useState([]);
-
   const [popupMessage, setPopupMessage] = useState("");
   const [showPopup, setShowPopup] = useState(false);
 
@@ -100,45 +47,71 @@ function AddRecordPage() {
   }, [sidebarOpen]);
 
   useEffect(() => {
-  const syncUnsyncedRecords = async () => {
-    const db = await openDB();
-    const tx = db.transaction("records", "readonly");
-    const store = tx.objectStore("records");
-    const recordsToSync = [];
+    const preloadChildren = async () => {
+      if (navigator.onLine) {
+        try {
+          const res = await fetch("/children");
+          if (!res.ok) throw new Error("Failed to fetch children");
 
-    store.openCursor().onsuccess = (e) => {
-      const cursor = e.target.result;
-      if (cursor) {
-        const record = cursor.value;
-        if (!record.synced && childData?.child_id) {
-          recordsToSync.push(record);
-        }
-        cursor.continue();
-      } else {
-        // ✅ Sync after cursor finishes
-        recordsToSync.forEach(async (record) => {
-          try {
-            const res = await fetch(`/add-record/${childData.child_id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(record),
-            });
-            if (res.ok) {
-              await markAsSynced(record.id);
-              console.log("🔁 Synced offline record:", record.id);
-            }
-          } catch (err) {
-            console.error("❌ Sync failed for record:", record.id, err);
+          const children = await res.json();
+          for (const child of children) {
+            await addChild({ ...child, child_id: child.child_id || child._id || child.id });
           }
-        });
+
+          console.log("📦 Preloaded children to IndexedDB:", children.length);
+        } catch (err) {
+          console.error("❌ Error preloading children:", err);
+        }
+      } else {
+        console.log("📴 Offline — skipping preload");
       }
     };
+
+    preloadChildren();
+  }, []);
+
+  const syncUnsyncedRecords = async () => {
+    if (!navigator.onLine) return;
+
+    const allRecords = JSON.parse(localStorage.getItem("offlineRecords") || "[]");
+    const unsynced = allRecords.filter(r => !r.synced && r.child_id);
+
+    if (unsynced.length === 0) {
+      console.log("✅ No unsynced records to sync");
+      return;
+    }
+
+    const synced = [];
+
+    for (const record of unsynced) {
+      try {
+        const res = await fetch(`/add-record/${record.child_id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(record),
+        });
+
+        if (res.ok) {
+          synced.push({ ...record, synced: true });
+          console.log("🔁 Synced offline record:", record.id);
+        }
+      } catch (err) {
+        console.error("❌ Sync failed for record:", record.id, err);
+      }
+    }
+
+    localStorage.setItem("offlineRecords", JSON.stringify(synced));
   };
 
-  window.addEventListener("online", syncUnsyncedRecords);
-  return () => window.removeEventListener("online", syncUnsyncedRecords);
-}, [childData]);
-//Language content
+  useEffect(() => {
+    syncUnsyncedRecords();
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("online", syncUnsyncedRecords);
+    return () => window.removeEventListener("online", syncUnsyncedRecords);
+  }, []);
+
   const content = {
     en: {
       title: "GROWTH GUARDIAN",
@@ -188,62 +161,96 @@ function AddRecordPage() {
     }
   };
 
-  const currentContent = content[language];
+  const currentContent = content[language] || content["en"];
 
-  // Fetch child data by Unique ID
+  const fetchChildById = async (childId) => {
+    try {
+      const offlineChild = await getChildById(childId);
+      if (offlineChild) return offlineChild;
+
+      if (navigator.onLine) {
+        const res = await fetch(`http://localhost:5000/child-by-unique-id/${childId}`);
+        if (!res.ok) throw new Error("Failed to fetch child online");
+
+        const onlineChild = await res.json();
+        const normalizedChild = {
+          ...onlineChild,
+          child_id: onlineChild.child_id || onlineChild._id || onlineChild.id
+        };
+
+        await addChild(normalizedChild);
+        return normalizedChild;
+      }
+
+      return null;
+    } catch (err) {
+      console.error("❌ Error in fetchChildById:", err);
+      return null;
+    }
+  };
+
   const handleFetchChild = async (e) => {
     e.preventDefault();
-    try {
-      const res = await fetch(`http://localhost:5000/child-by-unique-id/${uniqueId}`); // Backend endpoint to find child by uniqueId
-      if (!res.ok) throw new Error("Child not found");
-      const data = await res.json();
-      setChildData(data);
-      setRecords(data.history || []);
+    const normalizedId = String(uniqueId).trim();
+    const child = await fetchChildById(normalizedId);
+
+    if (child) {
+      setChildData(child);
+      setRecords(child.history || []);
       setHeight("");
       setWeight("");
       setIllnesses("");
       setMalnutrition("");
-    } catch (err) {
-      setPopupMessage("Invalid Unique ID! No child found with this ID.");
+
+      const source = !navigator.onLine
+        ? "offline"
+        : child.synced === false
+        ? "offline (unsynced)"
+        : "server";
+
+      setPopupMessage(`✅ Fetched from ${source}.`);
+      setShowPopup(true);
+    } else {
+      setPopupMessage("❌ No record found in server or offline cache.");
       setShowPopup(true);
       setChildData(null);
     }
   };
 
   const handleAddRecord = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!height || !weight) {
-    setPopupMessage("Height and Weight are required!");
-    setShowPopup(true);
-    return;
-  }
-
-  const recordId = "RECORD_" + Date.now();
-  const newRecord = {
-    id: recordId,
-    height: parseFloat(height),
-    weight: parseFloat(weight),
-    illnesses,
-    malnutrition: `${malnutrition.hasSigns} ${malnutrition.details}`.trim(),
-    date: new Date().toISOString()
-  };
-
-  console.log("🧪 Final record:", newRecord);
-  console.log("🧠 Syncing to:", `/add-record/${childData.child_id || childData._id}`);
-
-  try {
-    if (!navigator.onLine) {
-      console.log("📦 Saving record offline:", newRecord);
-      await saveToIndexedDB(newRecord);
-      setPopupMessage("Saved offline. Will sync when online.");
+    if (!height || !weight) {
+      setPopupMessage("Height and Weight are required!");
       setShowPopup(true);
       return;
     }
 
-    const res = await fetch(`/add-record/${childData.child_id || childData._id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
+    const recordId = "RECORD_" + Date.now();
+    const newRecord = {
+      id: recordId,
+      height: parseFloat(height),
+      weight: parseFloat(weight),
+      illnesses,
+      malnutrition: malnutrition.trim(),
+      date: new Date().toISOString(),
+      child_id: childData.child_id || childData._id,
+      synced: navigator.onLine
+    };
+
+    try {
+      if (!navigator.onLine) {
+        const offlineRecords = JSON.parse(localStorage.getItem("offlineRecords") || "[]");
+        offlineRecords.push(newRecord);
+        localStorage.setItem("offlineRecords", JSON.stringify(offlineRecords));
+        setPopupMessage("Saved offline. Will sync when online.");
+        setShowPopup(true);
+        return;
+      }
+
+      const res = await fetch(`/add-record/${newRecord.child_id}`, {
+        method: "PUT",
+             headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newRecord)
     });
 
@@ -256,8 +263,6 @@ function AddRecordPage() {
     setIllnesses("");
     setMalnutrition("");
 
-    await markAsSynced(recordId); // ✅ Mark as synced in IndexedDB
-
     setPopupMessage("Record added successfully!");
     setShowPopup(true);
   } catch (err) {
@@ -267,205 +272,146 @@ function AddRecordPage() {
   }
 };
 
-  // Chart data
-  const chartData = {
-    labels: records.map((r, i) => `Record ${i + 1}`),
-    datasets: [
-      {
-        label: "Weight (kg)",
-        data: records.map((r) => r.weight),
-        borderColor: "blue",
-        fill: false
-      },
-      {
-        label: "Height (cm)",
-        data: records.map((r) => r.height),
-        borderColor: "green",
-        fill: false
-      }
-    ]
-  };
-
+const chartData = {
+  labels: records.map((r, i) => `Record ${i + 1}`),
+  datasets: [
+    {
+      label: "Weight (kg)",
+      data: records.map((r) => r.weight),
+      borderColor: "blue",
+      fill: false
+    },
+    {
+      label: "Height (cm)",
+      data: records.map((r) => r.height),
+      borderColor: "green",
+      fill: false
+    }
+  ]
+};
 
 const chartOptions = {
   maintainAspectRatio: false,
   scales: {
     x: {
-      grid: {
-        color: 'rgba(255, 255, 255, 0.2)' // subtle white grid
-      },
-      ticks: {
-        color: '#ffffff' // white axis labels
-      }
+      grid: { color: 'rgba(255, 255, 255, 0.2)' },
+      ticks: { color: '#ffffff' }
     },
     y: {
-      grid: {
-        color: 'rgba(255, 255, 255, 0.2)'
-      },
-      ticks: {
-        color: '#ffffff'
-      }
+      grid: { color: 'rgba(255, 255, 255, 0.2)' },
+      ticks: { color: '#ffffff' }
     }
   },
   plugins: {
     legend: {
-      labels: {
-        color: '#ffffff' // white legend text
-      }
+      labels: { color: '#ffffff' }
     }
   }
 };
 
+return (
+  <div className="add-record-page">
+    {/* Background and Branding */}
+    <div className="moving-backgrounds">
+      <img src="/carousel1.jpg" alt="background 1" />
+      <img src="/carousel2.jpg" alt="background 2" />
+      <img src="/carousel3.jpg" alt="background 3" />
+    </div>
+    <div className="background-overlay"></div>
+    <div className="top-left-brand">
+      <MdFamilyRestroom className="brand-icon" />
+      <h1 className="brand-title">{currentContent.title}</h1>
+      <FaBars className="menu-icon" onClick={toggleSidebar} />
+    </div>
 
-  return (
-    <div className="add-record-page">
-      <div className="moving-backgrounds">
-        <img src="/carousel1.jpg" alt="background 1" />
-        <img src="/carousel2.jpg" alt="background 2" />
-        <img src="/carousel3.jpg" alt="background 3" />
+    {/* Sidebar */}
+    {sidebarOpen && (
+      <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
+    )}
+    <div ref={sidebarRef} className={`sidebar ${sidebarOpen ? "open" : ""}`}>
+      <ul className="sidebar-links">
+        <li onClick={() => { navigate("/home"); setSidebarOpen(false); }}>{currentContent.home}</li>
+        <li onClick={() => { navigate("/register"); setSidebarOpen(false); }}>{currentContent.register}</li>
+        <li onClick={() => { navigate("/add-record/:childId"); setSidebarOpen(false); }}>{currentContent.update}</li>
+        <li onClick={() => { navigate("/view-records"); setSidebarOpen(false); }}>{currentContent.view}</li>
+        <li onClick={() => { navigate("/profile"); setSidebarOpen(false); }}>{currentContent.profile}</li>
+      </ul>
+      <button className="logout-button" onClick={() => {
+        navigate('/login');
+        setSidebarOpen(false);
+      }}>
+        {currentContent.logout}
+      </button>
+    </div>
+
+    {/* Language Toggle */}
+    <div className="language-card1">
+      <div className="language-toggle1">
+        <button className={`lang-btn ${language === "en" ? "active" : ""}`} onClick={() => setLanguage("en")}>English</button>
+        <button className={`lang-btn1 ${language === "hi" ? "active" : ""}`} onClick={() => setLanguage("hi")}>हिन्दी</button>
       </div>
+    </div>
 
-      <div className="background-overlay"></div>
+    {/* Main Form */}
+    <div className="add-record-container">
+      {!childData && (
+        <form className="unique-id-form" onSubmit={handleFetchChild}>
+          <h3>{currentContent.fetchChild}</h3>
+          <label>{currentContent.enterId}:</label>
+          <input
+            type="text"
+            value={uniqueId}
+            onChange={(e) => setUniqueId(e.target.value)}
+            required
+          />
+          <button type="submit">{currentContent.fetch}</button>
+        </form>
+      )}
 
-      <div className="top-left-brand">
-        <MdFamilyRestroom className="brand-icon" />
-        <h1 className="brand-title">{currentContent.title}</h1>
-        <FaBars className="menu-icon" onClick={toggleSidebar} />
-      </div>
+      {childData && (
+        <div className="child-record-form">
+          <div className="child-info">
+            <p><strong>{currentContent.enterId}:</strong> {childData.child_id || childData._id || childData.id}</p>
+            <p><strong>{currentContent.name}:</strong> {childData.name}</p>
+            <p><strong>{currentContent.age}:</strong> {childData.age}</p>
+            <p><strong>{currentContent.dob}:</strong> {childData.dateOfBirth ? new Date(childData.dateOfBirth).toLocaleDateString() : ""}</p>
+          </div>
 
-   {sidebarOpen && (
-  <div
-    className="sidebar-backdrop"
-    onClick={() => setSidebarOpen(false)}
-  />
-)}
-
-<div ref={sidebarRef} className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-  <ul className="sidebar-links">
-    <li onClick={() => { navigate("/home"); setSidebarOpen(false); }}>{content[language].home}</li>
-    <li onClick={() => { navigate("/register"); setSidebarOpen(false); }}>{content[language].register}</li>
-    <li onClick={() => { navigate("/add-record/:childId"); setSidebarOpen(false); }}>{content[language].update}</li>
-    <li onClick={() => { navigate("/view-records"); setSidebarOpen(false); }}>{content[language].view}</li>
-    <li onClick={() => { navigate("/profile"); setSidebarOpen(false); }}>{content[language].profile}</li>
-  </ul>
-  <button
-    className="logout-button"
-    onClick={() => {
-      navigate('/login');
-      setSidebarOpen(false);
-    }}
-  >
-    {content[language].logout}
-  </button>
-</div>
-
-
-      <div className="language-card1">
-        <div className="language-toggle1">
-          <button
-            className={`lang-btn ${language === "en" ? "active" : ""}`}
-            onClick={() => setLanguage("en")}
-          >
-            English
-          </button>
-          <button
-            className={`lang-btn1 ${language === "hi" ? "active" : ""}`}
-            onClick={() => setLanguage("hi")}
-          >
-            हिन्दी
-          </button>
-        </div>
-      </div>
-
-      <div className="add-record-container">
-        {!childData && (
-          <form className="unique-id-form" onSubmit={handleFetchChild}>
-            <h3>{currentContent.fetchChild}</h3>
-            <label>{currentContent.enterId}:</label>
-            <input
-              type="text"
-              value={uniqueId}
-              onChange={(e) => setUniqueId(e.target.value)}
-              required
-            />
-            <button type="submit">{currentContent.fetch}</button>
+          <form onSubmit={handleAddRecord} className="new-record-form">
+            <label>{currentContent.height}:</label>
+            <input type="number" value={height} onChange={(e) => setHeight(e.target.value)} required />
+            <label>{currentContent.weight}:</label>
+            <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} required />
+            <label>{currentContent.illness}:</label>
+            <input type="text" value={illnesses} onChange={(e) => setIllnesses(e.target.value)} />
+            <label>{currentContent.malnutrition}:</label>
+            <input type="text" value={malnutrition} onChange={(e) => setMalnutrition(e.target.value)} />
+            <button type="submit">{currentContent.addRecord}</button>
           </form>
-        )}
 
-        {childData && (
-          <div className="child-record-form">
-            <div className="child-info">
-              <p>
-               
-  <strong>{currentContent.enterId}:</strong> {childData.child_id || childData._id || childData.id}
-</p>
-
-             
-              <p>
-                <strong>{currentContent.name}:</strong> {childData.name}
-              </p>
-              <p>
-                <strong>{currentContent.age}:</strong> {childData.age}
-              </p>
-              <p>
-                <strong>{currentContent.dob}:</strong> {childData.dateOfBirth ? new Date(childData.dateOfBirth).toLocaleDateString() : ""}
-              </p>
+          {records.length > 0 && (
+            <div className="charts">
+              <h3>{currentContent.progress}</h3>
+              <p className="growth-note">{currentContent.add}</p>
+              <Line data={chartData} options={chartOptions} />
             </div>
-
-            <form onSubmit={handleAddRecord} className="new-record-form">
-              <label>{currentContent.height}:</label>
-              <input
-                type="number"
-                value={height}
-                onChange={(e) => setHeight(e.target.value)}
-                required
-              />
-              <label>{currentContent.weight}:</label>
-              <input
-                type="number"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                required
-              />
-              <label>{currentContent.illness}:</label>
-              <input
-                type="text"
-                value={illnesses}
-                onChange={(e) => setIllnesses(e.target.value)}
-              />
-              <label>{currentContent.malnutrition}:</label>
-              <input
-                type="text"
-                value={malnutrition}
-                onChange={(e) => setMalnutrition(e.target.value)}
-              />
-              <button type="submit">{currentContent.addRecord}</button>
-            </form> 
-{records.length > 0 && (
-  <div className="charts">
-    <h3>{content[language].progress}</h3>
-    <p className="growth-note">{content[language].add}</p>  
-    <Line data={chartData} options={chartOptions} />
-  </div>
-)}
-
-
-          </div>
-        )}
-      </div>
-
-      {/* Reusable Popup */}
-      {showPopup && (
-        <div className="popup-overlay" onClick={() => setShowPopup(false)}>
-          <div className="popup-card" onClick={(e) => e.stopPropagation()}>
-            <h2>Message</h2>
-            <p>{popupMessage}</p>
-            <button onClick={() => setShowPopup(false)}>Close</button>
-          </div>
+          )}
         </div>
       )}
     </div>
-  );
+
+    {/* Popup Message */}
+    {showPopup && (
+      <div className="popup-overlay" onClick={() => setShowPopup(false)}>
+        <div className="popup-card" onClick={(e) => e.stopPropagation()}>
+          <h2>Message</h2>
+          <p>{popupMessage}</p>
+          <button onClick={() => setShowPopup(false)}>Close</button>
+        </div>
+      </div>
+    )}
+  </div>
+);
 }
 
 export default AddRecordPage;

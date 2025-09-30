@@ -12,6 +12,7 @@ import {
   getAllChildren,
 } from "../utils/indexeddb";
 
+
 // ✅ Helper function to convert image files to base64
 const toBase64 = (file) =>
   new Promise((resolve, reject) => {
@@ -40,6 +41,45 @@ function ChildForm() {
   const videoRef = useRef();
   const canvasRef = useRef();
 
+  const syncOfflineData = async () => {
+  const unsynced = (await getAllChildren()).filter((c) => c.synced === false);
+  for (const record of unsynced) {
+    try {
+      const response = await fetch("http://localhost:5000/child", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(record),
+      });
+      if (response.ok) {
+        console.log("🔁 Synced to MongoDB:", record.child_id);
+        await addChild({ ...record, synced: true });
+      } else {
+        console.warn("⚠️ Sync failed for:", record.child_id);
+      }
+    } catch (err) {
+      console.error("❌ Sync error:", err);
+    }
+  }
+};
+
+  useEffect(() => {
+  const handleOnline = () => setIsOnline(true);
+  const handleOffline = () => setIsOnline(false);
+
+  window.addEventListener("online", handleOnline);
+  window.addEventListener("offline", handleOffline);
+
+  setIsOnline(navigator.onLine); // initial state
+
+  getGeoLocation();
+  if (navigator.onLine) syncOfflineData();
+
+  return () => {
+    window.removeEventListener("online", handleOnline);
+    window.removeEventListener("offline", handleOffline);
+  };
+}, []);
+
   const [formData, setFormData] = useState({
     id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
     name: "",
@@ -64,45 +104,32 @@ function ChildForm() {
   }, [formData]);
 
   useEffect(() => {
-    const updateStatus = () => {
-      setIsOnline(navigator.onLine);
-      console.log("🌐 Network status updated:", navigator.onLine);
-      getGeoLocation();
-      if (navigator.onLine) syncOfflineData();
-    };
+  const checkConnection = () => {
+    fetch("https://www.google.com", { mode: "no-cors" })
+      .then(() => setIsOnline(true))
+      .catch(() => setIsOnline(false));
+  };
 
-    const syncOfflineData = async () => {
-      const unsynced = (await getAllChildren()).filter((c) => c.synced === false);
-      for (const record of unsynced) {
-        try {
-          const response = await fetch("http://localhost:5000/child", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(record),
-          });
-          if (response.ok) {
-            console.log("🔁 Synced to MongoDB:", record.child_id);
-            await addChild({ ...record, synced: true });
-          } else {
-            console.warn("⚠️ Sync failed for:", record.child_id);
-          }
-        } catch (err) {
-          console.error("❌ Sync error:", err);
-        }
-      }
-    };
-
-    window.addEventListener("online", updateStatus);
-    window.addEventListener("offline", updateStatus);
+  const handleOnline = () => {
+    checkConnection();
     getGeoLocation();
     syncOfflineData();
+  };
 
-    return () => {
-      window.removeEventListener("online", updateStatus);
-      window.removeEventListener("offline", updateStatus);
-    };
-  }, []);
+  const handleOffline = () => {
+    setIsOnline(false);
+  };
 
+  window.addEventListener("online", handleOnline);
+  window.addEventListener("offline", handleOffline);
+
+  checkConnection(); // initial check
+
+  return () => {
+    window.removeEventListener("online", handleOnline);
+    window.removeEventListener("offline", handleOffline);
+  };
+}, []);
   const getGeoLocation = () => {
     if (!navigator.geolocation)
       return setLocation({ city: "N/A", country: "N/A" });
@@ -186,57 +213,64 @@ function ChildForm() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.consent) {
-      setShowAlert(true);
+  e.preventDefault();
+
+  if (!formData.consent) {
+    setShowAlert(true);
+    return;
+  }
+
+  setShowAlert(false);
+
+  const childId = formData.id?.trim() || "CHILD_" + Date.now();
+  const payload = {
+    child_id: childId,
+    name: formData.name,
+    dateOfBirth: formData.dob,
+    age: Number(formData.age || 0),
+    gender: formData.gender,
+    guardian: formData.guardian,
+    weight: Number(formData.weight || 0),
+    height: Number(formData.height || 0),
+    illnesses: formData.illnesses,
+    malnutrition: {
+      hasSigns: formData.malnutrition.hasSigns || "",
+      details: formData.malnutrition.details || "",
+    },
+    photo: formData.photo,
+    consent: formData.consent,
+    geo: { city: location.city, country: location.country },
+    history: [],
+  };
+
+  try {
+    if (!isOnline) {
+      await addChild({ ...payload, synced: false });
+      console.log("✅ Saved locally (offline):", payload.child_id);
+      setShowSuccess(true);
       return;
     }
 
-    setShowAlert(false);
-    const childId = formData.id?.trim() || "CHILD_" + Date.now();
-const payload = {
-  child_id: childId,
-  name: formData.name,
-  dateOfBirth: formData.dob,
-  age: Number(formData.age || 0),
-  gender: formData.gender,
-  guardian: formData.guardian,
-  weight: Number(formData.weight || 0),
-  height: Number(formData.height || 0),
-  illnesses: formData.illnesses,
-  malnutrition: {
-    hasSigns: formData.malnutrition.hasSigns || "",
-    details: formData.malnutrition.details || "",
-  },
-  photo: formData.photo,
-  consent: formData.consent,
-  geo: { city: location.city, country: location.country },
-  history: [],
-};
+    const response = await fetch("http://localhost:5000/child", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-    try {
-      if (!isOnline) {
-        await addChild({ ...payload, synced: false });
-        setShowSuccess(true);
-        return;
-      }
+    if (!response.ok) throw new Error("Server rejected save");
 
-      const response = await fetch("http://localhost:5000/child", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) throw new Error("Failed to save record to cloud");
-
-      await addChild({ ...payload, synced: true });
-      setShowSuccess(true);
-    } catch (error) {
-      console.error("❌ Save Error:", error);
+    await addChild({ ...payload, synced: true });
+    console.log("✅ Saved to server:", payload.child_id);
+    setShowSuccess(true);
+  } catch (error) {
+    console.error("❌ Save Error:", error);
+    if (error.message.includes("duplicate")) {
       setShowDuplicate(true);
+    } else {
+      alert("Something went wrong while saving. Please try again.");
     }
-  };
-
+  }
+};
   const openCamera = async () => {
     setShowCamera(true);
     try {

@@ -120,6 +120,16 @@ app.get("/user/profile", verifyToken, async (req, res) => {
   }
 });
 
+app.get("/users", async (_req, res) => {
+  try {
+    const users = await User.find().select("-password").lean();
+    res.json(users);
+  } catch (err) {
+    console.error("❌ Error fetching users:", err);
+    res.status(500).json({ message: "Server Error" });
+  }
+});
+
 // ✅ Sync users from IndexedDB
 app.post("/sync-users", async (req, res) => {
   console.log("📡 Received POST /sync-users");
@@ -155,7 +165,7 @@ const childSchema = new mongoose.Schema({
   guardian: { type: String },
   weight: { type: Number },
   height: { type: Number },
-  illnesses: { type: String },
+  illnesses: { type: [String] },
   malnutrition: {
     hasSigns: { type: String, enum: ["yes", "no", ""], default: "" },
     details: { type: String },
@@ -188,10 +198,11 @@ app.post("/child", async (req, res) => {
     res.status(500).json({ message: "Server Error", error: err });
   }
 });
-
 // ✅ Get all children
 app.get("/children", async (_req, res) => {
+  console.log("📡 Connected to DB:", mongoose.connection.name);
   const items = await Child.find().sort({ createdAt: -1 }).lean();
+  console.log("📤 Returning children:", items.length);
   res.json(items);
 });
 
@@ -222,17 +233,28 @@ app.put("/add-record/:childId", async (req, res) => {
       return res.status(404).json({ message: "Child not found" });
     }
 
-    child.history.push(record);
-    await child.save();
+    // Ensure history is initialized
+    const updatedHistory = Array.isArray(child.history)
+      ? [...child.history, record]
+      : [record];
 
-    console.log("✅ Record added to child:", child.child_id);
-    res.json(child);
+    const result = await Child.updateOne(
+      { child_id: childId },
+      { $set: { history: updatedHistory } }
+    );
+
+    if (result.modifiedCount === 0) {
+      throw new Error("MongoDB update failed");
+    }
+
+    const updatedChild = await Child.findOne({ child_id: childId });
+    console.log("✅ Record added to child:", updatedChild.child_id);
+    res.json(updatedChild);
   } catch (err) {
     console.error("❌ Error in /add-record:", err);
     res.status(500).json({ message: "Failed to add record", error: err.message });
   }
 });
-
 // ✅ Delete a child by unique ID
 app.delete("/child/:childId", async (req, res) => {
   try {

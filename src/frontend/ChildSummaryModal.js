@@ -18,6 +18,14 @@ import {
 } from "chart.js";
 import "./ChildSummaryModal.css";
 
+import {
+  clearUsers,
+  clearChildren,
+  bulkPutUsers,
+  bulkPutChildren
+} from "../utils/indexeddb.js";
+
+
 // Register Chart.js components
 ChartJS.register(
     CategoryScale,
@@ -105,6 +113,36 @@ useEffect(() => {
         }
     }
 }, [showWhatsappPopup]);
+
+    useEffect(() => {
+  async function syncFromMongo() {
+    console.log("🌐 Back online — syncing users and children...");
+
+    try {
+      const usersRes = await fetch("/users");
+      const users = await usersRes.json();
+      console.log("Retrieved users =", users);
+
+      const childrenRes = await fetch("/children");
+      const children = await childrenRes.json();
+      console.log("Retrieved all children =", children);
+
+      await clearUsers();
+      await bulkPutUsers(users);
+
+      await clearChildren();
+      await bulkPutChildren(children);
+
+      console.log("✅ Synced MongoDB data into IndexedDB");
+    } catch (err) {
+      console.error("❌ Sync from MongoDB failed:", err);
+    }
+  }
+
+  window.addEventListener("online", syncFromMongo);
+  return () => window.removeEventListener("online", syncFromMongo);
+}, []);
+
 
     // Data for charts including historical records
     const allRecords = [...(child.history || []), { date: new Date().toLocaleDateString('en-GB'), weight: child.weight, height: child.height }];
@@ -809,8 +847,6 @@ ${recsHi}
         </button>
     </div>
 )}
-
-
                 {showDeleteConfirm && (
                     <div className="unique-id-modal-overlay" onClick={cancelDelete}>
                         <div className="popup-card" onClick={(e) => e.stopPropagation()}>

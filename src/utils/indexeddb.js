@@ -2,7 +2,7 @@ import { openDB } from "idb";
 
 // Initialize or open IndexedDB
 export const initDB = async () => {
-  return openDB("childHealthDB", 3, {
+  return openDB("childHealthDB", 6, {
     upgrade(db) {
       console.log("🔧 IndexedDB upgrade triggered");
 
@@ -86,13 +86,13 @@ export const syncUsers = async () => {
 };
 
 // 👶 Save child locally
-export const addChild = async (child) => {
+ export const addChild = async (child) => {
   try {
     const db = await initDB();
     const childToSave = {
       ...child,
       child_id: child.child_id || child.id || child._id || "unknown_id",
-      synced: false // ✅ mark child as unsynced for offline tracking
+      synced: child.synced ?? false // ✅ THIS LINE IS THE FIX
     };
     await db.put("children", childToSave);
     console.log("💾 Child saved locally:", childToSave);
@@ -119,30 +119,50 @@ export const getChildById = async (childId) => {
 };
 
 // 📝 Add a new progress record to a child
-export const addRecordToChild = async (childId, newRecord) => {
+export const addRecordToChild = async (childId, record) => {
   try {
-    const db = await initDB();
+    console.log("📥 Saving record offline:", record);
+
+    const db = await openDB("childHealthDB", 6);
     const tx = db.transaction("children", "readwrite");
     const store = tx.objectStore("children");
 
-    const normalizedId = String(childId).trim();
-    const child = await store.get(normalizedId);
-    if (!child) throw new Error("Child not found in IndexedDB");
+    let child = await store.get(childId);
+    console.log("📦 Retrieved child:", child);
 
-    const updatedHistory = Array.isArray(child.history)
-      ? [...child.history, newRecord]
-      : [newRecord];
+    if (!child) {
+      console.warn("⚠️ Child not found — creating placeholder");
 
-    const updatedChild = { ...child, history: updatedHistory };
-    await store.put(updatedChild);
+      child = {
+        child_id: childId,
+        name: "Unknown",
+        age: 0,
+        gender: "",
+        consent: false,
+        history: [record],
+        synced: false,
+        createdAt: new Date().toISOString()
+      };
+
+      await store.put(child);
+      console.log("✅ New child created with record");
+    } else {
+      const updatedHistory = [...(child.history || []), record];
+      const updatedChild = {
+        ...child,
+        history: updatedHistory,
+        synced: false
+      };
+
+      await store.put(updatedChild);
+      console.log("✅ Record appended to existing child");
+    }
+
     await tx.done;
-
-    console.log("📈 Added record to child:", newRecord);
   } catch (err) {
-    console.error("❌ Failed to add record to child:", err);
+    console.error("❌ Failed to save record offline:", err);
   }
 };
-
 // 📥 Get all children
 export const getAllChildren = async () => {
   try {
@@ -167,6 +187,37 @@ export const clearChildren = async () => {
   }
 };
 
+export const bulkPutUsers = async (users) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction("users", "readwrite");
+    const store = tx.objectStore("users");
+    users.forEach(user => store.put(user));
+    await tx.done;
+    console.log("✅ Bulk users saved to IndexedDB:", users.length);
+  } catch (err) {
+    console.error("❌ Failed bulk saving users:", err);
+  }
+};
+
+export const bulkPutChildren = async (children) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction("children", "readwrite");
+    const store = tx.objectStore("children");
+
+    for (const child of children) {
+      const existing = await store.get(child.child_id);
+      const synced = existing?.synced ?? true;
+      await store.put({ ...child, synced });
+    }
+
+    await tx.done;
+    console.log("✅ Bulk children saved to IndexedDB:", children.length);
+  } catch (err) {
+    console.error("❌ Failed bulk saving children:", err);
+  }
+};
 // 🔄Sync children to backend
 export const syncChildren = async () => {
   if (!navigator.onLine) {

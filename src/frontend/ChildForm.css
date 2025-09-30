@@ -1152,3 +1152,20 @@ select:focus {
 @keyframes fill {
   100% { box-shadow: inset 0px 0px 0px 40px #009dff; }
 }
+
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-weight: bold;
+  color: white;
+  font-size: 0.85rem;
+}
+
+.status-badge.online {
+  background-color: #28a745; /* green */
+}
+
+.status-badge.offline {
+  background-color: #dc3545; /* red */
+}

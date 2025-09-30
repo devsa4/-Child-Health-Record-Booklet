@@ -14,9 +14,19 @@ import {
 import { MdFamilyRestroom } from "react-icons/md";
 import { FaBars } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { getDB } from "../utils/getDB"; // adjust path if needed
 import "./AddRecordPage.css";
 import { addRecordToChild } from "../utils/indexeddb";
+import { initDB } from "../utils/indexeddb"; // adjust path if needed
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+const fetchWithTimeout = (url, options, timeout = 8000) => {
+  return Promise.race([
+    fetch(url, options),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Timeout")), timeout)
+    )
+  ]);
+};
 
 function AddRecordPage() {
   const [language, setLanguage] = useState("en");
@@ -30,7 +40,7 @@ function AddRecordPage() {
   const [records, setRecords] = useState([]);
   const [popupMessage, setPopupMessage] = useState("");
   const [showPopup, setShowPopup] = useState(false);
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const sidebarRef = useRef();
   const navigate = useNavigate();
 
@@ -71,47 +81,59 @@ function AddRecordPage() {
   }, []);
 
   const syncUnsyncedRecords = async () => {
-    if (!navigator.onLine) return;
+  if (!navigator.onLine) return;
 
-    const allRecords = JSON.parse(localStorage.getItem("offlineRecords") || "[]");
-    const unsynced = allRecords.filter(r => !r.synced && r.child_id);
-
-    if (unsynced.length === 0) {
-      console.log("✅ No unsynced records to sync");
-      return;
+  const db = await getDB( {
+  upgrade(db) {
+    if (!db.objectStoreNames.contains("offlineRecords")) {
+      db.createObjectStore("offlineRecords", { keyPath: "id" });
     }
+    if (!db.objectStoreNames.contains("users")) {
+      db.createObjectStore("users", { keyPath: "id" });
+    }
+    // Add any other stores you need here
+  }
+});
+  const allRecords = await db.getAll("offlineRecords");
+  const unsynced = allRecords.filter(r => !r.synced && r.child_id);
 
-    const synced = [];
+  if (unsynced.length === 0) {
+    console.log("✅ No unsynced records to sync");
+    return;
+  }
 
-    for (const record of unsynced) {
-      try {
-        const res = await fetch(`/add-record/${record.child_id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(record),
-        });
+  const synced = [];
 
-        if (res.ok) {
-          synced.push({ ...record, synced: true });
-          console.log("🔁 Synced offline record:", record.id);
-        }
-      } catch (err) {
-        console.error("❌ Sync failed for record:", record.id, err);
+  for (const record of unsynced) {
+    try {
+      const res = await fetch(`/add-record/${record.child_id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(record),
+      });
+
+      if (res.ok) {
+        synced.push({ ...record, synced: true });
+        console.log("🔁 Synced offline record:", record.id);
       }
+    } catch (err) {
+      console.error("❌ Sync failed for record:", record.id, err);
     }
+  }
+  
 
-    localStorage.setItem("offlineRecords", JSON.stringify(synced));
+  // ✅ Merge synced records back into full list
+  const updated = allRecords.map((r) =>
+  synced.find((s) => s.id === r.id) || r
+);
+for (const record of updated) {
+  await db.put("offlineRecords", record);
+}
+setRecords(updated); // ✅ refresh chart or list
   };
-
-  useEffect(() => {
-    syncUnsyncedRecords();
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener("online", syncUnsyncedRecords);
-    return () => window.removeEventListener("online", syncUnsyncedRecords);
-  }, []);
-
+useEffect(() => {
+  syncUnsyncedRecords(); // ✅ direct usage
+}, []);
   const content = {
     en: {
       title: "GROWTH GUARDIAN",
@@ -219,10 +241,23 @@ function AddRecordPage() {
 
 const handleAddRecord = async (e) => {
   e.preventDefault();
+  if (isSubmitting) return;
+
+  setIsSubmitting(true);
+  setPopupMessage("Saving record...");
+  setShowPopup(true);
+
+  const childId = childData.child_id || childData._id;
+  if (!childId) {
+    navigate("/add-record/preview");
+    setIsSubmitting(false);
+    return;
+  }
 
   if (!height || !weight) {
     setPopupMessage("Height and Weight are required!");
     setShowPopup(true);
+    setIsSubmitting(false);
     return;
   }
 
@@ -234,33 +269,76 @@ const handleAddRecord = async (e) => {
     illnesses,
     malnutrition: malnutrition.trim(),
     date: new Date().toISOString(),
-    child_id: childData.child_id || childData._id,
+    child_id: childId,
     synced: navigator.onLine
   };
 
-  try {
-    if (!navigator.onLine) {
-      await addRecordToChild(newRecord.child_id, newRecord);
-      setRecords((prev) => [...prev, newRecord]); // update chart immediately
-      setHeight("");
-      setWeight("");
-      setIllnesses("");
-      setMalnutrition("");
-      setPopupMessage("Saved offline. Will sync when online.");
-      setShowPopup(true);
-      return;
-    }
+  const saveLocally = async () => {
+    await addRecordToChild(childId, newRecord);
+    setRecords((prev) => [...prev, newRecord]);
+    setHeight("");
+    setWeight("");
+    setIllnesses("");
+    setMalnutrition("");
+    setPopupMessage("Saved offline. Will sync when online.");
+    setShowPopup(true);
+    setIsSubmitting(false);
+  };
 
-    const res = await fetch(`/add-record/${newRecord.child_id}`, {
+  if (!navigator.onLine) {
+    await saveLocally();
+    return;
+  }
+
+  try {
+    const res = await fetchWithTimeout(`/add-record/${childId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newRecord)
-    });
+    }, 8000);
 
-    if (!res.ok) throw new Error("Failed to add record");
+    if (!res.ok) {
+      if (res.status === 404) {
+        const fullChild = await getChildById(childId);
+        if (fullChild) {
+          const childRes = await fetch("/child", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(fullChild)
+          });
+
+          if (childRes.ok) {
+            const retryRes = await fetch(`/add-record/${childId}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(newRecord)
+            });
+
+            if (retryRes.ok) {
+              const updatedChild = await retryRes.json();
+              await addRecordToChild(childId, { ...newRecord, synced: true });
+              setRecords(updatedChild.history || []);
+              setPopupMessage("Record added after syncing child!");
+              setShowPopup(true);
+              setIsSubmitting(false);
+              return;
+            }
+          }
+        }
+      }
+
+      throw new Error("Failed to add record");
+    }
 
     const updatedChild = await res.json();
-    await addRecordToChild(newRecord.child_id, newRecord); // ✅ update IndexedDB too
+    await addRecordToChild(childId, { ...newRecord, synced: true });
+
+    const db = await initDB();
+    const confirmTx = db.transaction("children", "readonly");
+    const confirmStore = confirmTx.objectStore("children");
+    const confirm = await confirmStore.get(childId);
+    console.log("🔍 Final state of child in IndexedDB:", confirm);
+
     setRecords(updatedChild.history || []);
     setHeight("");
     setWeight("");
@@ -269,9 +347,10 @@ const handleAddRecord = async (e) => {
     setPopupMessage("Record added successfully!");
     setShowPopup(true);
   } catch (err) {
-    console.error(err);
-    setPopupMessage("Error saving record to cloud");
-    setShowPopup(true);
+    console.error("❌ Cloud save failed:", err);
+    await saveLocally();
+  } finally {
+    setIsSubmitting(false);
   }
 };
 

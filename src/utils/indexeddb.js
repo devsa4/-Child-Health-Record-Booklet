@@ -1,5 +1,5 @@
 import { openDB } from "idb";
-
+import { toast } from "react-toastify";
 // Initialize or open IndexedDB
 export const initDB = async () => {
   return openDB("childHealthDB", 6, {
@@ -219,19 +219,16 @@ export const bulkPutChildren = async (children) => {
   }
 };
 // 🔄Sync children to backend
-export const syncChildren = async () => {
-  if (!navigator.onLine) {
-    console.log("📴 Offline — child sync skipped");
-    return;
-  }
+const syncChildren = async () => {
+  console.log("🚀 syncChildren() triggered");
+  const db = await initDB();
+  const tx = db.transaction("children", "readonly");
+  const store = tx.objectStore("children");
 
-  const children = await getAllChildren();
-  const unsynced = children.filter((c) => !c.synced);
+  const all = await store.getAll();
+  const unsynced = all.filter((child) => !child.synced); // ✅ define it here
 
-  if (unsynced.length === 0) {
-    console.log("📭 No unsynced children to sync");
-    return;
-  }
+  console.log("🧵 Unsynced children:", unsynced);
 
   try {
     const response = await fetch("http://localhost:5000/sync-children", {
@@ -241,25 +238,40 @@ export const syncChildren = async () => {
     });
 
     if (response.ok) {
-      const db = await initDB();
-      const tx = db.transaction("children", "readwrite");
-      const store = tx.objectStore("children");
+      const writeTx = db.transaction("children", "readwrite");
+      const writeStore = writeTx.objectStore("children");
+
+      const start = performance.now();
 
       for (const child of unsynced) {
-        await store.put({ ...child, synced: true }); // ✅ mark as synced
+        const existing = await writeStore.get(child.id);
+        if (existing) {
+          await writeStore.put({ ...existing, synced: true });
+        }
       }
 
-      await tx.done;
-      console.log("✅ Synced unsynced children to MongoDB");
+      await writeTx.done;
+
+      const end = performance.now();
+      console.log(`✅ Synced ${unsynced.length} children to MongoDB`);
+      console.log(`⏱️ Sync took ${Math.round(end - start)}ms`);
+      toast("✅ Synced offline records to server");
+    } else {
+      console.warn("⚠️ Sync failed for some records");
+      console.log("🧵 Unsynced payload:", unsynced);
     }
   } catch (err) {
     console.error("❌ Child sync failed:", err);
   }
 };
-
-// 🌐 Auto-sync users and children when online
+// 🌐 Auto-sync users and children when back online (with debounce)
+let syncTimeout;
 window.addEventListener("online", () => {
   console.log("🌐 Back online — syncing users and children...");
-  syncUsers();
-  syncChildren();
+  clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(() => {
+    syncUsers();
+    syncChildren();
+  }, 1000); // ⏳ wait 1s before syncing
 });
+

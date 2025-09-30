@@ -6,6 +6,7 @@ import ChromaGrid from "./ChromaGrid";
 import ChildSummaryModal from "./ChildSummaryModal";
 import ChildSpotlightCard from "./ChildSpotlightCard";
 import "./ViewRecords.css";
+import { initDB } from "../utils/indexeddb"; // adjust path if needed
 
 const encouragements = {
   en: [
@@ -71,24 +72,46 @@ function ViewRecords() {
   }, [language]);
 
   useEffect(() => {
-    async function fetchRecords() {
-      try {
-        const res = await fetch("/children");
-        if (!res.ok) throw new Error("Failed to fetch records");
-        const data = await res.json();
-        setRecords(data);
-        setFilteredRecords(data);
+  async function fetchRecords() {
+    try {
+      const res = await fetch("/children");
+      if (!res.ok) throw new Error("Failed to fetch records");
+      const data = await res.json();
+      setRecords(data);
+      setFilteredRecords(data);
+      setTimeout(() => {
         setIsLoading(false);
-      } catch (err) {
-        console.error("Fetch error:", err);
+      }, 500); // Smooth UX
+    } catch (err) {
+      console.warn("🌐 Network fetch failed, falling back to IndexedDB:", err);
+      try {
+        const db = await initDB();
+        const tx = db.transaction("children", "readonly");
+        const store = tx.objectStore("children");
+
+        const start = performance.now();
+        const all = await store.getAll();
+        const end = performance.now();
+        console.log(`⏱️ IndexedDB read took ${Math.round(end - start)}ms`);
+
+        console.log("✅ IndexedDB children:", all);
+
+        // ⏳ Load only first 10 records for faster initial render
+        setRecords(all.slice(0, 10));
+        setFilteredRecords(all.slice(0, 10));
+
+        console.log("🧾 Records set for rendering:", all.slice(0, 10));
+      } catch (dbErr) {
+        console.error("❌ IndexedDB fallback failed:", dbErr);
         setRecords([]);
         setFilteredRecords([]);
+      } finally {
         setIsLoading(false);
       }
     }
-    fetchRecords();
-  }, []);
-
+  }
+  fetchRecords();
+}, []);
   useEffect(() => {
     const term = searchTerm.toLowerCase();
     const filtered = records.filter((r) =>
@@ -258,7 +281,6 @@ const handleDeleteChild = async (childId) => {
           className="search-bar"
         />
       </div>
-
       <div className={`encouragement-carousel ${fadeIn ? "fade-in" : "fade-out"}`}>
         <p>{encouragements[language]?.[encourageIndex] || "💬 You're making a difference!"}</p>
       </div>
@@ -275,6 +297,7 @@ const handleDeleteChild = async (childId) => {
             <div className="summary-card attention">⚠️ {content[language].attention}: {attentionCount}</div>
           </div>
           <ChromaGrid items={chromaItems} columns={3} rows={2} radius={220} />
+          
         </>
       )}
 

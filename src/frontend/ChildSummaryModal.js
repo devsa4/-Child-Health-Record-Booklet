@@ -3,7 +3,7 @@ import { Line } from "react-chartjs-2";
 import { useNavigate } from "react-router-dom";
 import { FaDownload, FaEdit } from "react-icons/fa";
 import { jsPDF } from 'jspdf';
-
+import { initDB } from "../utils/indexeddb.js";
 import { FaWhatsapp } from "react-icons/fa";
 import {
     Chart as ChartJS,
@@ -64,6 +64,32 @@ const [whatsappLinkToOpen, setWhatsappLinkToOpen] = useState(null);
         const timer = setTimeout(() => setSpinPhoto(false), 800);
         return () => clearTimeout(timer);
     }, [child]);
+
+    useEffect(() => {
+  async function fetchFullChildIfOffline() {
+    const childIdKey = child?.child_id || child?._id || child?.id;
+    const isMissingHistory = !child?.history || child.history.length === 0;
+    const isMissingVitals = !child?.weight || !child?.height;
+
+    if (!navigator.onLine && childIdKey && (isMissingHistory || isMissingVitals)) {
+      try {
+        const db = await initDB();
+        const tx = db.transaction("children", "readonly");
+        const store = tx.objectStore("children");
+        const fullChild = await store.get(childIdKey);
+
+        if (fullChild) {
+          Object.assign(child, fullChild); // safely enrich the existing child object
+          console.log("📦 Loaded full child record from IndexedDB:", fullChild);
+        }
+      } catch (err) {
+        console.error("❌ Failed to load child from IndexedDB:", err);
+      }
+    }
+  }
+
+  fetchFullChildIfOffline();
+}, [child]);
 
     useEffect(() => {
         if (showDeleteConfirm) {
@@ -142,7 +168,6 @@ useEffect(() => {
   window.addEventListener("online", syncFromMongo);
   return () => window.removeEventListener("online", syncFromMongo);
 }, []);
-
 
     // Data for charts including historical records
     const allRecords = [...(child.history || []), { date: new Date().toLocaleDateString('en-GB'), weight: child.weight, height: child.height }];
@@ -420,21 +445,28 @@ useEffect(() => {
   const avgWeight = 10 + child.age * 2;
   const avgHeight = 70 + child.age * 7;
 
-  // If malnutrition signs present → Attention
+  // ✅ Normalize illnesses safely
+  const illnessStr = typeof child.illnesses === "string"
+    ? child.illnesses.toLowerCase()
+    : "";
+
+  // ✅ Malnutrition signs → Attention
   if (child.malnutrition?.hasSigns === "yes") return "attention";
 
-  // If no illness & no malnutrition → Healthy
-  if ((!child.illnesses || child.illnesses.toLowerCase() === "N/A"||child.illnesses.toLowerCase() === "Skip") &&
-      (!child.malnutrition || child.malnutrition.hasSigns !== "yes")) {
+  // ✅ No illness & no malnutrition → Healthy
+  if (
+    (!illnessStr || illnessStr === "n/a" || illnessStr === "skip") &&
+    (!child.malnutrition || child.malnutrition.hasSigns !== "yes")
+  ) {
     return "healthy";
   }
 
-  // Otherwise check growth progress
+  // ✅ Growth check → Healthy
   if (child.weight >= avgWeight && child.height >= avgHeight) return "healthy";
 
+  // ✅ Default fallback → Improving
   return "improving";
 };
-
     const progressStatusKey = getProgressStatusKey();
 
     // New function for actionable recommendations, including encouragement messages

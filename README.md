@@ -1,5 +1,5 @@
 # Child Health Record Booklet : Growth Guardian
-### Team name: Runtime Graphene
+### *Team name: Runtime Graphene*
 # Step by Step Instructions for Installing Project
 
 
@@ -63,7 +63,7 @@ This will start the React frontend on port 3000.
 
 *email : runtimegraphene@gmail.com* 
 
-*password: ****(provided in the submission mail)*
+*password*: ****(provided in the submission mail)*
 
 •	Download MongoDB Compass.
 •	Connect to Our Database by following these:

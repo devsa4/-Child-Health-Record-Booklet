@@ -30,7 +30,8 @@ cd backend npm install
 Create a .env file in the backend folder with your MongoDB connection string and JWT secret.
 
 ```bash
-MONGO_URI=mongodb+srv://runtime:runtime@cluster0.qu6kyoi.mongodb.net/reactdb  JWT_SECRET=growthboi
+MONGO_URI=mongodb+srv://runtime:runtime@cluster0.qu6kyoi.mongodb.net/reactdb
+JWT_SECRET=growthboi
 ```
 
 #### 5.	Start the Backend Server
@@ -58,7 +59,12 @@ This will start the React frontend on port 3000.
 
 #### 8.	Set Up MongoDB with MongoDB Compass
 
-•	Log in MongoDB Atlas using email : runtimegraphene@gmail.com password: runtime@123
+•	Log in MongoDB Atlas using
+
+*email : runtimegraphene@gmail.com* 
+
+*password: ****(provided in the submission mail)*
+
 •	Download MongoDB Compass.
 •	Connect to Our Database by following these:
 1.	Open MongoDB Compass.

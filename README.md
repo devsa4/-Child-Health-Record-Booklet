@@ -30,7 +30,7 @@ cd backend npm install
 Create a .env file in the backend folder with your MongoDB connection string and JWT secret.
 
 ```bash
-MONGO_URI=mongodb+srv://runtime:runtime@cluster0.qu6kyoi.mongodb.net/reactdb
+MONGO_URI=mongodb+srv://<user-name>:<password>@cluster0.qu6kyoi.mongodb.ne/reactdb
 JWT_SECRET=growthboi
 ```
 

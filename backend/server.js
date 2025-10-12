@@ -91,9 +91,11 @@ app.post("/login", async (req, res) => {
       expiresIn: "1h",
     });
     res.status(200).json({
-      message: "Login successful",
-      token,
-      userId: user._id,
+    message: "Login successful",
+    token,
+    userId: user.nationalId, // ✅ use nationalId for consistency
+    fullName: user.fullName,
+    passwordHash: user.password, // ✅ send bcrypt hash for offline login
     });
   } catch (err) {
     console.error("❌ Login error:", err);
@@ -130,29 +132,58 @@ app.get("/users", async (_req, res) => {
   }
 });
 
-// ✅ Sync users from IndexedDB
-app.post("/sync-users", async (req, res) => {
-  console.log("📡 Received POST /sync-users");
-  const { users } = req.body;
-
-  if (!Array.isArray(users) || users.length === 0) {
-    return res.status(400).json({ message: "No users to sync" });
-  }
-
+// ✅ Preload all users for offline login
+app.get("/all-users", async (_req, res) => {
   try {
-    const hashedUsers = await Promise.all(users.map(async (user) => {
-      const hashedPassword = await bcrypt.hash(user.password, 10);
-      return { ...user, password: hashedPassword };
-    }));
-
-    await User.insertMany(hashedUsers, { ordered: false }); // skips duplicates
-    res.status(200).json({ message: "Users synced successfully" });
+    const users = await User.find({}, "nationalId password fullName").lean();
+    res.json({ users });
   } catch (err) {
-    console.error("❌ Sync error:", err);
-    res.status(500).json({ message: "Sync failed", error: err });
+    console.error("❌ Failed to fetch all users:", err);
+    res.status(500).json({ message: "Server Error" });
   }
 });
 
+// ✅ Sync users from IndexedDB
+app.post("/sync-users", async (req, res) => {
+  const { users } = req.body;
+  if (!Array.isArray(users) || users.length === 0) {
+    return res.status(400).json({ success: false, message: "No users to sync" });
+  }
+
+  try {
+    const existingIds = await User.find({
+      nationalId: { $in: users.map(u => u.nationalId) }
+    }).distinct("nationalId");
+
+    console.log("⏭️ Skipped duplicate users:", existingIds);
+
+    const newUsers = users.filter(u => {
+      return (
+        u.nationalId &&
+        u.fullName &&
+        u.password &&
+        typeof u.isAdult === "boolean" &&
+        u.email
+      ) && !existingIds.includes(u.nationalId);
+    });
+
+    if (newUsers.length === 0) {
+      return res.status(200).json({ success: true, message: "No new users to insert" });
+    }
+
+    const inserted = await User.insertMany(newUsers, { ordered: false });
+    console.log("✅ Inserted users:", inserted.map(u => u.nationalId));
+
+    res.status(200).json({
+      success: true,
+      message: "Users synced successfully",
+      inserted: inserted.length,
+    });
+  } catch (err) {
+    console.error("❌ Sync error:", err);
+    res.status(500).json({ success: false, message: "Sync failed", error: err.message });
+  }
+});
 // ===================
 // ✅ Child schema
 // ===================

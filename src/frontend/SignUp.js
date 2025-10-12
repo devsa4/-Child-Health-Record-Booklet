@@ -4,6 +4,7 @@ import Form from 'react-bootstrap/Form';
 import Card from 'react-bootstrap/Card';
 import Modal from 'react-bootstrap/Modal';
 import { Link, useNavigate } from 'react-router-dom';
+import bcrypt from 'bcryptjs';
 import axios from 'axios';
 import {
   FaUser,
@@ -78,12 +79,21 @@ function SignUpForm() {
         await addUser(user);
         alert("Saved locally because server is unreachable.");
       }
-    } else {
-      // OFFLINE → Save to IndexedDB
-      await addUser(user);
-      alert("⚠️ You are offline. Data saved locally and will sync later.");
-      navigate("/home");
-    }
+    }else {
+  // OFFLINE → Save to IndexedDB with hashed password
+  const hashedPassword = await bcrypt.hash(formData.password.trim(), 10);
+
+  await addUser({
+    fullName: formData.fullName.trim(),
+    email: formData.email.trim(),
+    passwordHash: hashedPassword, // ✅ bcrypt hash for offline login
+    isAdult,
+    nationalId: nid,
+  });
+
+  alert("⚠️ You are offline. Data saved locally and will sync later.");
+  navigate("/home");
+}
 
     // Reset form always
     setFormData({

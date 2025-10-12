@@ -8,45 +8,68 @@ import { FaUser, FaLock, FaSignInAlt } from 'react-icons/fa';
 import { MdSecurity } from 'react-icons/md';
 import './LoginForm.css';
 import { syncUsers } from "../utils/indexeddb";
+import { preloadAllUsers, verifyOfflineUser,addUser} from "../utils/indexeddb";
+import { useEffect } from "react";
 
 function LoginForm() {
   const [nationalId, setNationalId] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
+  useEffect(() => {
+  if (navigator.onLine) {
+    preloadAllUsers();
+  }
+  }, []);
 
   const handleLogin = async (e) => {
   e.preventDefault();
 
-  if (navigator.onLine) {
-    syncUsers();
-  }
   if (!nationalId || !password) {
     setErrorMessage('Please enter both National ID and password.');
     return;
   }
 
-  try {
-    const res = await axios.post('http://localhost:5000/login', {
-      nationalId: nationalId.trim(),
-      password: password.trim(),
-    });
+  if (navigator.onLine) {
+    syncUsers();
+    try {
+      const res = await axios.post('http://localhost:5000/login', {
+        nationalId: nationalId.trim(),
+        password: password.trim(),
+      });
 
-    console.log('Logged in user:', res.data.user);
+      await addUser({
+        nationalId: nationalId.trim(),
+        fullName: res.data.fullName || "Unknown",
+        passwordHash: res.data.passwordHash, // ✅ use backend hash directly
+      });
 
-    // ✅ yaha add karo
-   localStorage.setItem("token", res.data.token);
-localStorage.setItem("loggedInUserId", res.data.userId)
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("loggedInUserId", res.data.userId);
+      setNationalId('');
+      setPassword('');
+      setErrorMessage('');
+      navigate('/home');
+    } catch (err) {
+      console.error('Login error:', err.response || err);
+      setErrorMessage(err.response?.data?.message || 'Invalid National ID or Password.');
+    }
+  }else {
+  const offlineUser = await verifyOfflineUser(nationalId, password);
+  console.log("🧪 Offline user lookup result:", offlineUser);
 
-    setNationalId('');
-    setPassword('');
+  if (offlineUser) {
+    console.log("✅ Offline login success — navigating to /home");
+    localStorage.setItem("token", "offline-token");
+    localStorage.setItem("loggedInUserId", offlineUser.nationalId);
     setErrorMessage('');
-    navigate('/home'); 
-  } catch (err) {
-    console.error('Login error:', err.response || err);
-    setErrorMessage(err.response?.data?.message || 'Invalid National ID or Password.');
+    window.location.assign('/home');
+  } else {
+    console.log("❌ Offline login failed — showing error popup");
+    setErrorMessage("Offline login failed. Please check your credentials.");
   }
-};
+  }
+  };
 
 
   return (

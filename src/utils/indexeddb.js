@@ -1,5 +1,6 @@
 import { openDB } from "idb";
 import { toast } from "react-toastify";
+import bcrypt from "bcryptjs";
 // Initialize or open IndexedDB
 export const initDB = async () => {
   return openDB("childHealthDB", 6, {
@@ -68,18 +69,46 @@ export const syncUsers = async () => {
   }
 
   try {
-    const response = await fetch("http://localhost:5000/sync-users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ users }),
-    });
+    const payload = users.map(user => ({
+      nationalId: user.nationalId,
+      fullName: user.fullName || "Unknown",
+      password: user.passwordHash, 
+      isAdult: user.isAdult ?? true,
+      email: user.email || `${user.nationalId}@placeholder.com`,
+    }));
 
-    if (response.ok) {
-      await clearUsers();
-      console.log("✅ Synced users to MongoDB");
-    } else {
-      console.error("❌ Server error:", await response.text());
+    const response = await fetch("http://localhost:5000/sync-users", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ users: payload }),
+});
+
+let result;
+try {
+  result = await response.json();
+} catch (err) {
+  console.error("❌ Failed to parse server response:", err);
+  return;
+}
+
+if (response.ok && result.success !== false) {
+  console.log("✅ Synced users to MongoDB:", result);
+  // ✅ Now mark users as synced
+  const db = await initDB();
+  const tx = db.transaction("users", "readwrite");
+  const store = tx.objectStore("users");
+
+  for (const user of payload) {
+    const existing = await store.get(user.nationalId);
+    if (existing) {
+      await store.put({ ...existing, synced: true });
     }
+  }
+
+  await tx.done;
+} else {
+  console.error("❌ Server rejected sync:", result);
+}
   } catch (err) {
     console.error("❌ Sync failed:", err);
   }
@@ -244,7 +273,12 @@ const syncChildren = async () => {
       const start = performance.now();
 
       for (const child of unsynced) {
-        const existing = await writeStore.get(child.id);
+        const key = child.child_id || child.id || child._id;
+        if (!key) {
+          console.warn("⚠️ Skipping child with missing ID:", child);
+          continue;
+        }
+const existing = await writeStore.get(key);
         if (existing) {
           await writeStore.put({ ...existing, synced: true });
         }
@@ -275,3 +309,55 @@ window.addEventListener("online", () => {
   }, 1000); // ⏳ wait 1s before syncing
 });
 
+// 🔑 Hash password using SHA-256
+export const hashPassword = async (password) => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+};
+
+//Verify user offline using bcrypt
+export const verifyOfflineUser = async (nationalId, password) => {
+  try {
+    const db = await initDB();
+    const user = await db.get("users", nationalId.trim());
+    console.log("🔍 IndexedDB user found:", user);
+
+    if (!user) return null;
+
+    const isMatch = await bcrypt.compare(password.trim(), user.passwordHash);
+    console.log("🔐 Password match:", isMatch);
+
+    return isMatch ? user : null;
+  } catch (err) {
+    console.error("❌ Offline login failed:", err);
+    return null;
+  }
+};
+
+// 🌐 Preload all users from MongoDB into IndexedDB
+export const preloadAllUsers = async () => {
+  if (!navigator.onLine) {
+    console.log("📴 Offline — cannot preload users");
+    return;
+  }
+
+  try {
+    const res = await fetch("http://localhost:5000/all-users");
+    const data = await res.json();
+    if (Array.isArray(data.users)) {
+      const usersWithHash = data.users.map(user => ({
+        nationalId: user.nationalId,
+        fullName: user.fullName,
+        passwordHash: user.password, // already bcrypt-hashed
+      }));
+      await bulkPutUsers(usersWithHash);
+      console.log(`✅ Preloaded ${usersWithHash.length} users into IndexedDB`);
+    }
+  } catch (err) {
+    console.error("❌ Failed to preload users:", err);
+  }
+};

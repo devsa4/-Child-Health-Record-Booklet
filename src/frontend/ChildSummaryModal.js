@@ -803,9 +803,8 @@ ${recsHi}
     </button>
   </div>
 )}
-
-                {/* Historical Data Trends Graphs */}
-          <h3>{t.weightProgress}</h3>
+{/* Historical Data Trends Graphs */}
+<h3 className="progress-title">{t.weightProgress}</h3>
 <p style={{ fontStyle: "italic", color: "#555555a2", marginBottom: "0.5rem", fontSize: "0.9rem" }}>
   {modalLanguage === "en"
     ? "(Update Record to see the timeline of the progress)."
@@ -815,7 +814,7 @@ ${recsHi}
     <Line data={weightData} height={300} options={{ maintainAspectRatio: false }} />
 </div>
 
-<h3>{t.heightProgress}</h3>
+<h3 className="progress-title">{t.heightProgress}</h3>
 <p style={{ fontStyle: "italic", color: "#555555a2", marginBottom: "0.5rem", fontSize: "0.9rem" }}>
   {modalLanguage === "en"
     ? "(Update Record to see the timeline of the progress)."

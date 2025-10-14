@@ -5,16 +5,16 @@ import bcrypt from "bcryptjs";
 export const initDB = async () => {
   return openDB("childHealthDB", 6, {
     upgrade(db) {
-      console.log("🔧 IndexedDB upgrade triggered");
+      console.log("IndexedDB upgrade triggered");
 
       if (!db.objectStoreNames.contains("users")) {
         db.createObjectStore("users", { keyPath: "nationalId" });
-        console.log("✅ 'users' store created");
+        console.log("'users' store created");
       }
 
       if (!db.objectStoreNames.contains("children")) {
         db.createObjectStore("children", { keyPath: "child_id" });
-        console.log("✅ 'children' store created");
+        console.log("'children' store created");
       }
     },
   });

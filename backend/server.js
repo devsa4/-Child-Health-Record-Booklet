@@ -22,15 +22,13 @@ app.use(
 app.use(express.json({ limit: "3mb" }));
 app.use(express.urlencoded({ limit: "3mb", extended: true }));
 
-// ✅ Connect to MongoDB Atlas
+// Connect to MongoDB Atlas
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+  .then(() => console.log("MongoDB Connected"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
-// ===================
-// ✅ User schema
-// ===================
+// User schema
 const userSchema = new mongoose.Schema({
   fullName: { type: String, required: true },
   email: { type: String, required: true },
@@ -184,9 +182,8 @@ app.post("/sync-users", async (req, res) => {
     res.status(500).json({ success: false, message: "Sync failed", error: err.message });
   }
 });
-// ===================
-// ✅ Child schema
-// ===================
+
+// Child schema
 const childSchema = new mongoose.Schema({
   child_id: { type: String, required: true, unique: true },
   name: { type: String, required: true },
